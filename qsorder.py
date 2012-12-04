@@ -38,6 +38,9 @@ class wave_file:
                 self.wavfile += str(LO)
                 self.wavfile += "MHz.wav"
 
+		#fix slash in the file name
+		self.wav.file.replace("/","-")
+
                 # get ready to write wave file
                 try:
                         #self.f = open(self.wavfile,'wb')
