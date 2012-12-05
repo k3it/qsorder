@@ -1,3 +1,6 @@
+import os
+import subprocess
+import re
 import pyaudio
 import wave
 import time
@@ -39,7 +42,7 @@ class wave_file:
                 self.wavfile += "MHz.wav"
 
 		#fix slash in the file name
-		self.wav.file.replace("/","-")
+		self.wavfile = self.wavfile.replace('/','-')
 
                 # get ready to write wave file
                 try:
@@ -70,11 +73,25 @@ class wave_file:
 def dump_audio(call,mode,freq,qso_time):
 	#create the wave file
 	BASENAME = call + "_" + mode 
+	BASENAME = BASENAME.replace('/','-')
 	w=wave_file(RATE,freq,BASENAME,qso_time)
 	__data = (b''.join(frames))
 	bytes_written=w.write(__data)
-	print "WAV:", datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"), w.wavfile
 	w.close_wave()
+
+	#try to convert to mp3
+	lame_path = os.path.dirname(os.path.realpath(__file__))
+	lame_path += "\\lame.exe"
+	command = [lame_path,w.wavfile]
+	try:
+		output=subprocess.Popen(command, \
+				stderr=subprocess.STDOUT, stdout=subprocess.PIPE).communicate()[0]
+		#mp3 = re.search('\S+.mp3',output)
+		gain = re.search('\S*Replay.+$',output)
+		print "WAV:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), BASENAME + "..." + freq + "Mhz.mp3", \
+				gain.group(0)
+	except:
+		print "could not convert wav to mp3", w.wavfile
 
         
 
@@ -87,7 +104,9 @@ RATE = 8000
 BASENAME = "QSO"
 LO = 14000
 duration = 30
-dqlength = 240 # number of chunks to store in the buffer
+dqlength = 360 # number of chunks to store in the buffer
+DELAY = 20.0
+DELAY = 1.0
 
 MYPORT=12060
 
@@ -128,7 +147,7 @@ stream = p.open(format=FORMAT,
 stream.start_stream()
 
 
-print "* recording", CHANNELS, "ch,", dqlength * CHUNK / RATE, "secs audio buffer"
+print "* recording", CHANNELS, "ch,", dqlength * CHUNK / RATE, "secs audio buffer, Delay:", DELAY, "secs" 
 print("\t--------------------------------")
 
 
@@ -167,8 +186,8 @@ while stream.is_active():
 				calls = call + "_de_" + mycall
 				modes = contest + "_" + mode
 
-				t = threading.Timer( 15.0, dump_audio,[calls,modes,freq,datetime.datetime.utcnow()] )
-				print "QSO:", datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"), call, freq
+				t = threading.Timer( DELAY, dump_audio,[calls,modes,freq,datetime.datetime.utcnow()] )
+				print "QSO:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), call, freq
 				t.start()
 			except:
 				pass # ignore, probably some other udp packet
