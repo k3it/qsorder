@@ -21,7 +21,7 @@ class wave_file:
         """
         class definition for the WAV file object
         """
-        def __init__(self,samp_rate,LO,BASENAME,qso_time):
+        def __init__(self,samp_rate,LO,BASENAME,qso_time,contest_dir):
                 #starttime/endtime
                 self.create_time=time.time()
                 #now=datetime.datetime.utcnow()
@@ -41,13 +41,20 @@ class wave_file:
                 self.wavfile += str(LO)
                 self.wavfile += "MHz.wav"
 
-		#fix slash in the file name
+
+		#contest directory
+		contest_dir += "_" + str(now.year) 
+
+		#fix slash in the file/directory name
 		self.wavfile = self.wavfile.replace('/','-')
+		contest_dir = contestdir.replace('/','-')
+
+		self.wavfile = contest_dir + "/" + self.wavfile
 
                 # get ready to write wave file
                 try:
-                        #self.f = open(self.wavfile,'wb')
-                        #self.w = wave.open(self.f,"wb")
+			if not os.path.exists(contest_dir):
+    				os.makedirs(contest_dir)
 			self.w = wave.open(self.wavfile, 'wb')
                 except:
                         print "unable to open WAV file for writing"
@@ -74,7 +81,7 @@ def dump_audio(call,mode,freq,qso_time):
 	#create the wave file
 	BASENAME = call + "_" + mode 
 	BASENAME = BASENAME.replace('/','-')
-	w=wave_file(RATE,freq,BASENAME,qso_time)
+	w=wave_file(RATE,freq,BASENAME,qso_time,mode)
 	__data = (b''.join(frames))
 	bytes_written=w.write(__data)
 	w.close_wave()
@@ -88,7 +95,7 @@ def dump_audio(call,mode,freq,qso_time):
 				stderr=subprocess.STDOUT, stdout=subprocess.PIPE).communicate()[0]
 		#mp3 = re.search('\S+.mp3',output)
 		gain = re.search('\S*Replay.+$',output)
-		print "WAV:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), BASENAME + "..." + freq + "Mhz.mp3", \
+		print "WAV:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), BASENAME[:20] + ".." + freq + "Mhz.mp3", \
 				gain.group(0)
 	except:
 		print "could not convert wav to mp3", w.wavfile
