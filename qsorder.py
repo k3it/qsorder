@@ -8,14 +8,40 @@ import sys
 import struct
 import datetime
 import threading
-#import Queue
 import string
-#import math
 import binascii
 
+from optparse import OptionParser
 from collections import deque
 from socket import *
 from xml.dom.minidom import parse, parseString
+
+CHUNK = 1024
+FORMAT = pyaudio.paInt16
+CHANNELS = 2
+RATE = 8000
+BASENAME = "QSO"
+LO = 14000
+dqlength = 360 # number of chunks to store in the buffer
+DELAY = 20.0
+MYPORT=12060
+
+usage = "usage: %prog [OPTION]..."
+parser = OptionParser()
+parser.add_option("-l", "--buffer-length", type="int", default=45,
+                  help="Audio buffer length in secs [default=%default]")
+parser.add_option("-d", "--delay", type="int", default=20, 
+                  help="Capture x seconds after QSO log entry [default=%default]")
+parser.add_option("-p", "--path", type="string", default=None,
+                  help="Base directory for audio files [default=%default]")
+
+(options,args) = parser.parse_args()
+
+dqlength =  int (options.buffer_length * RATE / CHUNK) + 1
+DELAY = options.delay
+
+if (options.path):
+	os.chdir(options.path)
 
 class wave_file:
         """
@@ -41,13 +67,12 @@ class wave_file:
                 self.wavfile += str(LO)
                 self.wavfile += "MHz.wav"
 
-
 		#contest directory
 		contest_dir += "_" + str(now.year) 
 
 		#fix slash in the file/directory name
 		self.wavfile = self.wavfile.replace('/','-')
-		contest_dir = contestdir.replace('/','-')
+		contest_dir = contest_dir.replace('/','-')
 
 		self.wavfile = contest_dir + "/" + self.wavfile
 
@@ -103,22 +128,8 @@ def dump_audio(call,mode,freq,qso_time):
         
 
 
-CHUNK = 1024
-
-FORMAT = pyaudio.paInt16
-CHANNELS = 2
-RATE = 8000
-BASENAME = "QSO"
-LO = 14000
-duration = 30
-dqlength = 360 # number of chunks to store in the buffer
-DELAY = 20.0
-DELAY = 1.0
-
-MYPORT=12060
-
 print("\t--------------------------------")
-print "v2.1a QSO Recorder for N1MM, 2012 K3IT\n"
+print "v2.1b QSO Recorder for N1MM, 2012 K3IT\n"
 print("\t--------------------------------")
 print "Listening on UDP port", MYPORT
 
@@ -155,6 +166,7 @@ stream.start_stream()
 
 
 print "* recording", CHANNELS, "ch,", dqlength * CHUNK / RATE, "secs audio buffer, Delay:", DELAY, "secs" 
+print "Output directory", os.getcwd() + "\\<contest_YEAR>"
 print("\t--------------------------------")
 
 
