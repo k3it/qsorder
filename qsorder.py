@@ -145,6 +145,7 @@ def dump_audio(call,mode,freq,qso_time):
 		gain = re.search('\S*Replay.+$',output)
 		print "WAV:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), BASENAME[:20] + ".." + freq + "Mhz.mp3", \
 				gain.group(0)
+		os.remove(w.wavfile)
 	except:
 		print "could not convert wav to mp3", w.wavfile
 
