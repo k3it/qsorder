@@ -57,11 +57,16 @@ parser.add_option("-d", "--delay", type="int", default=20,
                   help="Capture x seconds after QSO log entry [default=%default]")
 parser.add_option("-p", "--path", type="string", default=None,
                   help="Base directory for audio files [default=%default]")
+parser.add_option("-P", "--port", type="int", default=12060,
+                  help="UDP Port [default=%default]")
+parser.add_option("-s", "--station-nr", type="int", default=None,
+                  help="Network Station Number [default=%default]")
 
 (options,args) = parser.parse_args()
 
 dqlength =  int (options.buffer_length * RATE / CHUNK) + 1
 DELAY = options.delay
+MYPORT = options.port
 
 if (options.path):
 	os.chdir(options.path)
@@ -191,6 +196,8 @@ stream.start_stream()
 
 print "* recording", CHANNELS, "ch,", dqlength * CHUNK / RATE, "secs audio buffer, Delay:", DELAY, "secs" 
 print "Output directory", os.getcwd() + "\\<contest_YEAR>"
+if (options.station_nr >= 0):
+	print "Recording only station", options.station_nr, "QSOs"
 print("\t--------------------------------")
 
 
@@ -225,6 +232,13 @@ while stream.is_active():
 				mode = dom.getElementsByTagName("mode")[0].firstChild.nodeValue
 				freq = dom.getElementsByTagName("band")[0].firstChild.nodeValue
 				contest = dom.getElementsByTagName("contestname")[0].firstChild.nodeValue
+				station = dom.getElementsByTagName("NetworkedCompNr")[0].firstChild.nodeValue
+				
+				# skip packet if not matching network station number specified in the command line
+				if (options.station_nr >= 0):
+					if (options.station_nr != station):
+						print "QSO:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring from stn", station
+						continue
 
 				calls = call + "_de_" + mycall
 				modes = contest + "_" + mode
@@ -237,10 +251,13 @@ while stream.is_active():
 
 	except (KeyboardInterrupt):
 		print "73! k3it"
+		stream.stop_stream()
+		stream.close()
+		p.terminate()
 		raise
 
 
-stream.stop_stream()
+#
 stream.close()
 p.terminate()
 
