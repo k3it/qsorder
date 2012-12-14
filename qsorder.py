@@ -5,7 +5,7 @@
 # Title: qsorder.py
 # Author: k3it
 # Generated: Wed Dec 5 2012
-# Version: 2.1b
+# Version: 2.3b
 ##################################################
 
 # qsorder is free software: you can redistribute it and/or modify
@@ -33,6 +33,7 @@ import datetime
 import threading
 import string
 import binascii
+import pyhk
 
 from optparse import OptionParser
 from collections import deque
@@ -61,6 +62,8 @@ parser.add_option("-P", "--port", type="int", default=12060,
                   help="UDP Port [default=%default]")
 parser.add_option("-s", "--station-nr", type="int", default=None,
                   help="Network Station Number [default=%default]")
+parser.add_option("-k", "--hot-key", type="string", default="r",
+                  help="Hotkey for manual recording Ctrl-Alt-<hot_key> [default=%default]")
 
 (options,args) = parser.parse_args()
 
@@ -70,6 +73,14 @@ MYPORT = options.port
 
 if (options.path):
 	os.chdir(options.path)
+
+if (len(options.hot_key) == 1):
+	HOTKEY=options.hot_key.upper()
+else:
+	print "Hotkey should be a single character"
+	parser.print_help()
+	exit(-1)
+
 
 class wave_file:
         """
@@ -96,18 +107,19 @@ class wave_file:
                 self.wavfile += "MHz.wav"
 
 		#contest directory
-		contest_dir += "_" + str(now.year) 
+		self.contest_dir = contest_dir
+		self.contest_dir += "_" + str(now.year) 
 
 		#fix slash in the file/directory name
 		self.wavfile = self.wavfile.replace('/','-')
-		contest_dir = contest_dir.replace('/','-')
+		self.contest_dir = self.contest_dir.replace('/','-')
 
-		self.wavfile = contest_dir + "/" + self.wavfile
+		self.wavfile = self.contest_dir + "/" + self.wavfile
 
                 # get ready to write wave file
                 try:
-			if not os.path.exists(contest_dir):
-    				os.makedirs(contest_dir)
+			if not os.path.exists(self.contest_dir):
+    				os.makedirs(self.contest_dir)
 			self.w = wave.open(self.wavfile, 'wb')
                 except:
                         print "unable to open WAV file for writing"
@@ -130,11 +142,11 @@ class wave_file:
                 self.w.close()
 
 
-def dump_audio(call,mode,freq,qso_time):
+def dump_audio(call,contest,mode,freq,qso_time):
 	#create the wave file
-	BASENAME = call + "_" + mode 
+	BASENAME = call + "_" + contest + "_" + mode 
 	BASENAME = BASENAME.replace('/','-')
-	w=wave_file(RATE,freq,BASENAME,qso_time,mode)
+	w=wave_file(RATE,freq,BASENAME,qso_time,contest)
 	__data = (b''.join(frames))
 	bytes_written=w.write(__data)
 	w.close_wave()
@@ -148,17 +160,35 @@ def dump_audio(call,mode,freq,qso_time):
 				stderr=subprocess.STDOUT, stdout=subprocess.PIPE).communicate()[0]
 		#mp3 = re.search('\S+.mp3',output)
 		gain = re.search('\S*Replay.+$',output)
-		print "WAV:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), BASENAME[:20] + ".." + freq + "Mhz.mp3", \
-				gain.group(0)
+		print "WAV:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), BASENAME[:20] + ".." + str(freq) + "Mhz.mp3", \
+			gain.group(0)
 		os.remove(w.wavfile)
 	except:
 		print "could not convert wav to mp3", w.wavfile
 
         
 
+def manual_dump():
+	print "QSO:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), "HOTKEY pressed"
+	dump_audio("HOTKEY","AUDIO","RF",0,datetime.datetime.utcnow())
+
+ 
+def hotkey():
+	#create pyhk class instance
+	hot = pyhk.pyhk()
+ 
+	#add hotkey
+	hot.addHotkey(['Ctrl', 'Alt',HOTKEY],manual_dump,isThread=False)
+	hot.start()
+
+t = threading.Thread(target=hotkey)
+t.start()
+ 
+
+
 
 print("\t--------------------------------")
-print "v2.1b QSO Recorder for N1MM, 2012 K3IT\n"
+print "v2.3b QSO Recorder for N1MM, 2012 K3IT\n"
 print("\t--------------------------------")
 print "Listening on UDP port", MYPORT
 
@@ -196,6 +226,7 @@ stream.start_stream()
 
 print "* recording", CHANNELS, "ch,", dqlength * CHUNK / RATE, "secs audio buffer, Delay:", DELAY, "secs" 
 print "Output directory", os.getcwd() + "\\<contest_YEAR>"
+print "Hotkey: CTRL+ALT+" + HOTKEY
 if (options.station_nr >= 0):
 	print "Recording only station", options.station_nr, "QSOs"
 print("\t--------------------------------")
@@ -241,9 +272,11 @@ while stream.is_active():
 						continue
 
 				calls = call + "_de_" + mycall
-				modes = contest + "_" + mode
 
-				t = threading.Timer( DELAY, dump_audio,[calls,modes,freq,datetime.datetime.utcnow()] )
+				if (mode == "USB" or mode == "LSB"):
+					mode="SSB"
+
+				t = threading.Timer( DELAY, dump_audio,[calls,contest,mode,freq,datetime.datetime.utcnow()] )
 				print "QSO:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), call, freq
 				t.start()
 			except:
