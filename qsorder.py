@@ -202,7 +202,6 @@ except IOError as e:
     print("No Input devices: %s" % e[0])
 
 
-#frames = []
 frames = deque('',dqlength)
 
 
