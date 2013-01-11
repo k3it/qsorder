@@ -4,8 +4,8 @@
 # qsorder - A contest QSO recorder
 # Title: qsorder.py
 # Author: k3it
-# Generated: Wed Dec 5 2012
-# Version: 2.3b
+# Generated: Thu Jan 10 2013
+# Version: 2.4b
 ##################################################
 
 # qsorder is free software: you can redistribute it and/or modify
@@ -62,7 +62,7 @@ parser.add_option("-P", "--port", type="int", default=12060,
                   help="UDP Port [default=%default]")
 parser.add_option("-s", "--station-nr", type="int", default=None,
                   help="Network Station Number [default=%default]")
-parser.add_option("-k", "--hot-key", type="string", default="r",
+parser.add_option("-k", "--hot-key", type="string", default="m",
                   help="Hotkey for manual recording Ctrl-Alt-<hot_key> [default=%default]")
 
 (options,args) = parser.parse_args()
@@ -158,8 +158,7 @@ def dump_audio(call,contest,mode,freq,qso_time):
 	try:
 		output=subprocess.Popen(command, \
 				stderr=subprocess.STDOUT, stdout=subprocess.PIPE).communicate()[0]
-		#mp3 = re.search('\S+.mp3',output)
-		gain = re.search('\S*Replay.+$',output)
+		gain = re.search('\S*Replay.+',output)
 		print "WAV:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), BASENAME[:20] + ".." + str(freq) + "Mhz.mp3", \
 			gain.group(0)
 		os.remove(w.wavfile)
