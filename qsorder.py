@@ -4,8 +4,8 @@
 # qsorder - A contest QSO recorder
 # Title: qsorder.py
 # Author: k3it
-# Generated: Thu Jan 10 2013
-# Version: 2.4b
+# Generated: Thu Jan 20 2013
+# Version: 2.5b
 ##################################################
 
 # qsorder is free software: you can redistribute it and/or modify
@@ -29,11 +29,13 @@ import wave
 import time
 import sys
 import struct
-import datetime
 import threading
 import string
 import binascii
 import pyhk
+
+import datetime
+import dateutil.parser
 
 from optparse import OptionParser
 from collections import deque
@@ -62,7 +64,7 @@ parser.add_option("-P", "--port", type="int", default=12060,
                   help="UDP Port [default=%default]")
 parser.add_option("-s", "--station-nr", type="int", default=None,
                   help="Network Station Number [default=%default]")
-parser.add_option("-k", "--hot-key", type="string", default="m",
+parser.add_option("-k", "--hot-key", type="string", default="o",
                   help="Hotkey for manual recording Ctrl-Alt-<hot_key> [default=%default]")
 
 (options,args) = parser.parse_args()
@@ -187,7 +189,7 @@ t.start()
 
 
 print("\t--------------------------------")
-print "v2.3b QSO Recorder for N1MM, 2012 K3IT\n"
+print "v2.5b QSO Recorder for N1MM, 2012 K3IT\n"
 print("\t--------------------------------")
 print "Listening on UDP port", MYPORT
 
@@ -250,11 +252,13 @@ while stream.is_active():
 		check_sum = binascii.crc32(udp_data)
 		dom = parseString(udp_data)
 
+		# skip packet if duplicate
 		if check_sum in seen:
 			seen[check_sum] += 1
 		else:
 			seen[check_sum] = 1
 			try:
+				#read UDP fields
 				dom = parseString(udp_data)
 				call = dom.getElementsByTagName("call")[0].firstChild.nodeValue
 				mycall = dom.getElementsByTagName("mycall")[0].firstChild.nodeValue
@@ -262,20 +266,30 @@ while stream.is_active():
 				freq = dom.getElementsByTagName("band")[0].firstChild.nodeValue
 				contest = dom.getElementsByTagName("contestname")[0].firstChild.nodeValue
 				station = dom.getElementsByTagName("NetworkedCompNr")[0].firstChild.nodeValue
+				qso_timestamp = dom.getElementsByTagName("timestamp")[0].firstChild.nodeValue
+				radio_nr = dom.getElementsByTagName("radionr")[0].firstChild.nodeValue
+				
+				#convert qso_timestamp to datetime object
+				timestamp = dateutil.parser.parse(qso_timestamp)
+
+				#verify that month matches, if not, give DD-MM-YY format precendense
+				if (timestamp.strftime("%m") != datetime.datetime.utcnow().strftime("%m")):
+					timestamp = dateutil.parser.parse(qso_timestamp,dayfirst=True)	
 				
 				# skip packet if not matching network station number specified in the command line
 				if (options.station_nr >= 0):
 					if (options.station_nr != station):
-						print "QSO:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring from stn", station
+						print "QSO:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring from stn", station
 						continue
 
 				calls = call + "_de_" + mycall
 
-				if (mode == "USB" or mode == "LSB"):
-					mode="SSB"
+				#if (mode == "USB" or mode == "LSB"):
+				#	mode="SSB"
 
-				t = threading.Timer( DELAY, dump_audio,[calls,contest,mode,freq,datetime.datetime.utcnow()] )
-				print "QSO:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), call, freq
+				#t = threading.Timer( DELAY, dump_audio,[calls,contest,mode,freq,datetime.datetime.utcnow()] )
+				t = threading.Timer( DELAY, dump_audio,[calls,contest,mode,freq,timestamp] )
+				print "QSO:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq
 				t.start()
 			except:
 				pass # ignore, probably some other udp packet
