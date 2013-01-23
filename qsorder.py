@@ -64,8 +64,11 @@ parser.add_option("-P", "--port", type="int", default=12060,
                   help="UDP Port [default=%default]")
 parser.add_option("-s", "--station-nr", type="int", default=None,
                   help="Network Station Number [default=%default]")
-parser.add_option("-k", "--hot-key", type="string", default="o",
+parser.add_option("-k", "--hot-key", type="string", default="O",
                   help="Hotkey for manual recording Ctrl-Alt-<hot_key> [default=%default]")
+parser.add_option("-S", "--so2r", action="store_true", default=False,
+		help="SO2R mode, downmix to mono: Left Ch - Radio1 QSOs, Right Ch - Radio2 QSOs [default=%default]")
+
 
 (options,args) = parser.parse_args()
 
@@ -144,7 +147,7 @@ class wave_file:
                 self.w.close()
 
 
-def dump_audio(call,contest,mode,freq,qso_time):
+def dump_audio(call,contest,mode,freq,qso_time,radio_nr):
 	#create the wave file
 	BASENAME = call + "_" + contest + "_" + mode 
 	BASENAME = BASENAME.replace('/','-')
@@ -156,7 +159,18 @@ def dump_audio(call,contest,mode,freq,qso_time):
 	#try to convert to mp3
 	lame_path = os.path.dirname(os.path.realpath(__file__))
 	lame_path += "\\lame.exe"
-	command = [lame_path,w.wavfile]
+
+	if (options.so2r and radio_nr == "1"):
+		command = [lame_path]
+		arguments = ["-m","m", "--scale-l", "2", "--scale-r", "0", w.wavfile]
+		command.extend(arguments)
+	elif (options.so2r and radio_nr == "2"):
+		command = [lame_path]
+		arguments = ["-m","m", "--scale-l", "0", "--scale-r", "2", w.wavfile]
+		command.extend(arguments)
+	else:
+		command = [lame_path,w.wavfile]
+
 	try:
 		output=subprocess.Popen(command, \
 				stderr=subprocess.STDOUT, stdout=subprocess.PIPE).communicate()[0]
@@ -171,7 +185,7 @@ def dump_audio(call,contest,mode,freq,qso_time):
 
 def manual_dump():
 	print "QSO:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), "HOTKEY pressed"
-	dump_audio("HOTKEY","AUDIO","RF",0,datetime.datetime.utcnow())
+	dump_audio("HOTKEY","AUDIO","RF",0,datetime.datetime.utcnow(),73)
 
  
 def hotkey():
@@ -288,7 +302,7 @@ while stream.is_active():
 				#	mode="SSB"
 
 				#t = threading.Timer( DELAY, dump_audio,[calls,contest,mode,freq,datetime.datetime.utcnow()] )
-				t = threading.Timer( DELAY, dump_audio,[calls,contest,mode,freq,timestamp] )
+				t = threading.Timer( DELAY, dump_audio,[calls,contest,mode,freq,timestamp,radio_nr] )
 				print "QSO:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq
 				t.start()
 			except:
