@@ -4,8 +4,8 @@
 # qsorder - A contest QSO recorder
 # Title: qsorder.py
 # Author: k3it
-# Generated: Thu Jan 20 2013
-# Version: 2.5b
+# Generated: Thu Jun 23 2013
+# Version: 2.6b
 ##################################################
 
 # qsorder is free software: you can redistribute it and/or modify
@@ -42,6 +42,8 @@ from collections import deque
 from socket import *
 from xml.dom.minidom import parse, parseString
 
+import logging
+
 CHUNK = 1024
 FORMAT = pyaudio.paInt16
 CHANNELS = 2
@@ -51,23 +53,31 @@ LO = 14000
 dqlength = 360 # number of chunks to store in the buffer
 DELAY = 20.0
 MYPORT=12060
+DEBUG_FILE="qsorder-debug-log.txt"
+
 
 usage = "usage: %prog [OPTION]..."
 parser = OptionParser()
-parser.add_option("-l", "--buffer-length", type="int", default=45,
-                  help="Audio buffer length in secs [default=%default]")
+parser.add_option("-D", "--debug", action="store_true", default=False,
+		help="Save debug info[default=%default]")
 parser.add_option("-d", "--delay", type="int", default=20, 
                   help="Capture x seconds after QSO log entry [default=%default]")
-parser.add_option("-p", "--path", type="string", default=None,
-                  help="Base directory for audio files [default=%default]")
-parser.add_option("-P", "--port", type="int", default=12060,
-                  help="UDP Port [default=%default]")
-parser.add_option("-s", "--station-nr", type="int", default=None,
-                  help="Network Station Number [default=%default]")
+parser.add_option("-i", "--device-index", type="int", default=None,
+                  help="Index of the recording input (use -q to list) [default=%default]")
 parser.add_option("-k", "--hot-key", type="string", default="O",
                   help="Hotkey for manual recording Ctrl-Alt-<hot_key> [default=%default]")
+parser.add_option("-l", "--buffer-length", type="int", default=45,
+                  help="Audio buffer length in secs [default=%default]")
+parser.add_option("-P", "--port", type="int", default=12060,
+                  help="UDP Port [default=%default]")
+parser.add_option("-p", "--path", type="string", default=None,
+                  help="Base directory for audio files [default=%default]")
+parser.add_option("-q", "--query-inputs", action="store_true", default=False,
+		help="Query and print input devices [default=%default]")
 parser.add_option("-S", "--so2r", action="store_true", default=False,
 		help="SO2R mode, downmix to mono: Left Ch - Radio1 QSOs, Right Ch - Radio2 QSOs [default=%default]")
+parser.add_option("-s", "--station-nr", type="int", default=None,
+                  help="Network Station Number [default=%default]")
 
 
 (options,args) = parser.parse_args()
@@ -85,6 +95,14 @@ else:
 	print "Hotkey should be a single character"
 	parser.print_help()
 	exit(-1)
+
+if (options.debug):
+	logging.basicConfig(filename=DEBUG_FILE,level=logging.DEBUG,format='%(asctime)s %(message)s')
+	logging.debug('debug log started')
+	logging.debug('qsorder options:')
+	logging.debug(options)
+
+
 
 
 class wave_file:
@@ -172,6 +190,9 @@ def dump_audio(call,contest,mode,freq,qso_time,radio_nr):
 		command = [lame_path,w.wavfile]
 
 	try:
+		if (options.debug):
+			logging.debug(command)
+
 		output=subprocess.Popen(command, \
 				stderr=subprocess.STDOUT, stdout=subprocess.PIPE).communicate()[0]
 		gain = re.search('\S*Replay.+',output)
@@ -202,24 +223,59 @@ t.start()
 
 
 
-print("\t--------------------------------")
-print "v2.5b QSO Recorder for N1MM, 2012 K3IT\n"
-print("\t--------------------------------")
-print "Listening on UDP port", MYPORT
+print("--------------------------------------")
+print "v2.6b QSO Recorder for N1MM, 2013 K3IT\n"
+print("--------------------------------------")
 
 p = pyaudio.PyAudio()
 
+if (options.query_inputs):
+	max_devs = p.get_device_count()
+	print "Device index	Description"
+	print "------------	-----------"
+	for i in range(max_devs):
+    		devinfo = p.get_device_info_by_index(i)
+		if devinfo['maxInputChannels'] > 0:
+			try:
+                		if p.is_format_supported(
+				   int(RATE),			
+                    		   input_device = devinfo['index'],
+				   input_channels = devinfo['maxInputChannels'],
+				   input_format =  pyaudio.paInt16):
+					print "\t",i,"\t", devinfo['name']
+            		except ValueError:
+                		pass
+	p.terminate()
+	os._exit(0)
 
-try:
-    def_index = p.get_default_input_device_info()
-    print "Input Device :", def_index['name']
-except IOError as e:
-    print("No Input devices: %s" % e[0])
 
+if (options.device_index):
+	try:
+    		def_index = p.get_device_info_by_index(options.device_index)
+    		print "Input Device :", def_index['name']
+		DEVINDEX = options.device_index
+	except IOError as e:
+    		print("Invalid Input device: %s" % e[0])
+		p.terminate()
+		os._exit(-1)
+
+else:
+	try:
+    		def_index = p.get_default_input_device_info()
+    		print "Input Device :", def_index['index'], def_index['name']
+		DEVINDEX = def_index['index']
+	except IOError as e:
+    		print("No Input devices: %s" % e[0])
+		p.terminate()
+		os._exit(-1)
+
+
+	
 
 frames = deque('',dqlength)
 
 
+print "Listening on UDP port", MYPORT
 
 # define callback
 def callback(in_data, frame_count, time_info, status):
@@ -229,6 +285,7 @@ def callback(in_data, frame_count, time_info, status):
 
 stream = p.open(format=FORMAT,
                 channels=CHANNELS,
+		input_device_index=DEVINDEX,
                 rate=RATE,
                 input=True,
                 frames_per_buffer=CHUNK,
@@ -266,12 +323,20 @@ while stream.is_active():
 		check_sum = binascii.crc32(udp_data)
 		dom = parseString(udp_data)
 
+		if (options.debug):
+			logging.debug('UDP Packet Received:')
+			logging.debug(udp_data)
+
 		# skip packet if duplicate
 		if check_sum in seen:
 			seen[check_sum] += 1
+			if (options.debug):
+				logging.debug('DUPE packet skipped')
 		else:
 			seen[check_sum] = 1
 			try:
+				now =  datetime.datetime.utcnow()
+
 				#read UDP fields
 				dom = parseString(udp_data)
 				call = dom.getElementsByTagName("call")[0].firstChild.nodeValue
@@ -287,13 +352,20 @@ while stream.is_active():
 				timestamp = dateutil.parser.parse(qso_timestamp)
 
 				#verify that month matches, if not, give DD-MM-YY format precendense
-				if (timestamp.strftime("%m") != datetime.datetime.utcnow().strftime("%m")):
+				if (timestamp.strftime("%m") != now.strftime("%m")):
 					timestamp = dateutil.parser.parse(qso_timestamp,dayfirst=True)	
 				
 				# skip packet if not matching network station number specified in the command line
 				if (options.station_nr >= 0):
 					if (options.station_nr != station):
 						print "QSO:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring from stn", station
+						continue
+
+
+				# skip packet if QSO was more than DELAY seconds ago
+				t_delta = (now - timestamp).total_seconds()
+				if ( t_delta > DELAY ):
+						print "---:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring ", t_delta, "sec old QSO" 
 						continue
 
 				calls = call + "_de_" + mycall
@@ -306,6 +378,8 @@ while stream.is_active():
 				print "QSO:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq
 				t.start()
 			except:
+				if (options.debug):
+					logging.debug('Could not parse previous packet')
 				pass # ignore, probably some other udp packet
 
 	except (KeyboardInterrupt):
