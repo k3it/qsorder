@@ -4,8 +4,8 @@
 # qsorder - A contest QSO recorder
 # Title: qsorder.py
 # Author: k3it
-# Generated: Thu Feb 28 2015
-# Version: 2.7
+# Generated: Tue, May 26 2015
+# Version: 2.8
 ##################################################
 
 # qsorder is free software: you can redistribute it and/or modify
@@ -33,6 +33,8 @@ import threading
 # import string
 import binascii
 import pyhk
+import platform
+import ctypes
 
 import datetime
 import dateutil.parser
@@ -42,6 +44,8 @@ from collections import deque
 from socket import *
 # from xml.dom.minidom import parse, parseString
 from xml.dom.minidom import parseString
+
+
 
 import logging
 
@@ -70,8 +74,10 @@ parser.add_option("-k", "--hot-key", type="string", default="O",
                         help="Hotkey for manual recording Ctrl-Alt-<hot_key> [default=%default]")
 parser.add_option("-l", "--buffer-length", type="int", default=45,
                         help="Audio buffer length in secs [default=%default]")
-parser.add_option("-m", "--use-month", action="store_true", default=False,
-                        help="Include month and mode in the contest directory [default=%default]")
+# parser.add_option("-m", "--use-month", action="store_true", default=False,
+#                         help="Include month and mode in the contest directory [default=%default]")
+parser.add_option("-C", "--continuous", action="store_true", default=False,
+                        help="Record continuous audio stream in addition to individual QSOs[default=%default]")
 parser.add_option("-P", "--port", type="int", default=12060,
                         help="UDP Port [default=%default]")
 parser.add_option("-p", "--path", type="string", default=None,
@@ -79,8 +85,7 @@ parser.add_option("-p", "--path", type="string", default=None,
 parser.add_option("-q", "--query-inputs", action="store_true", default=False,
                         help="Query and print input devices [default=%default]")
 parser.add_option("-S", "--so2r", action="store_true", default=False,
-                        help="SO2R mode, downmix to mono: Left Ch - Radio1 QSOs, Right Ch - \
-                        Radio2 QSOs [default=%default]")
+                        help="SO2R mode, downmix to mono: Left Ch - Radio1 QSOs, Right Ch - Radio2 QSOs [default=%default]")
 parser.add_option("-s", "--station-nr", type="int", default=None,
                         help="Network Station Number [default=%default]")
 
@@ -135,11 +140,11 @@ class wave_file:
 
                 # contest directory
                 self.contest_dir = contest_dir
-                if (options.use_month):
-                    self.contest_dir = contest_dir.replace(mode,'')
-                    self.contest_dir += "_" + mode + "_" + now.strftime("%B").upper() + "_" + str(now.year)
-                else:
-                    self.contest_dir += "_" + str(now.year)
+                # if (options.use_month):
+                #     self.contest_dir = contest_dir.replace(mode,'')
+                #     self.contest_dir += "_" + mode + "_" + now.strftime("%B").upper() + "_" + str(now.year)
+                # else:
+                self.contest_dir += "_" + str(now.year)
 
 
 
@@ -224,22 +229,109 @@ def hotkey():
     hot.addHotkey(['Ctrl', 'Alt', HOTKEY], manual_dump, isThread=False)
     hot.start()
 
+def get_free_space_mb(folder):
+    """ Return folder/drive free space (in bytes)
+    """
+    if platform.system() == 'Windows':
+        free_bytes = ctypes.c_ulonglong(0)
+        ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(folder), None, None, ctypes.pointer(free_bytes))
+        return free_bytes.value/1024/1024
+    else:
+        st = os.statvfs(folder)
+        return st.f_bavail * st.f_frsize/1024/1024
+
+
+def start_new_lame_stream():
+
+    lame_path = os.path.dirname(os.path.realpath(__file__))
+    lame_path += "\\lame.exe"
+
+
+    # print "CTL: Starting new mp3 file", datetime.datetime.utcnow.strftime("%m-%d %H:%M:%S")
+    now = datetime.datetime.utcnow()
+    contest_dir = "AUDIO_" + str(now.year)
+    if not os.path.exists(contest_dir):
+        os.makedirs(contest_dir)
+
+    BASENAME = "CONTEST_AUDIO"
+    filename = contest_dir + "/" + BASENAME + "_"
+    filename += str(now.year)
+    filename += str(now.month).zfill(2)
+    filename += str(now.day).zfill(2)
+    filename += "_"
+    filename += str(now.hour).zfill(2)
+    filename += str(now.minute).zfill(2)
+    filename += "Z"
+    # filename += str(int(LO/1000))
+    filename += ".mp3"
+    command = [lame_path]
+    # arguments = ["-r", "-s", str(RATE), "-v", "--disptime 60", "-h", "--tt", BASENAME, "--ty", str(now.year), "--tg Ham Radio", "-", filename]
+    # arguments = ["-r", "-s", str(RATE), "-v", "-h", "--quiet", "--tt", BASENAME, "--ty", str(now.year), "-", filename]
+    arguments = ["-r", "-s", str(RATE), "-h", "--flush", "--quiet", "--tt", "Qsorder Contest Recording", "--ty", str(now.year), "--tc", os.path.basename(filename), "-", filename]
+    command.extend(arguments)
+    try:
+        mp3handle = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+    except:
+        print "CTL error starting mp3 recording.  Exiting.."
+        os._exit(-1)
+
+    print "CTL:", str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + "Z started new .mp3 file: ", filename
+    print "CTL: Disk free space:", get_free_space_mb(contest_dir)/1024, "GB"
+    if get_free_space_mb(contest_dir) < 100:
+        print "CTL: WARNING: Low Disk space"
+    return mp3handle,filename
+
+
+
+#write continious mp3 stream to disk in a separate worker thread
+def writer():
+        # start new lame recording
+        now = datetime.datetime.utcnow()
+        utchr = now.hour
+        utcmin = now.minute
+        (lame, filename) = start_new_lame_stream()
+        while True:
+            #open a new file on top of the hour
+            now = datetime.datetime.utcnow()
+            if utchr != now.hour:
+                # sleep some to flush out buffers
+                time.sleep(5)
+                lame.terminate()
+                utchr = now.hour
+                (lame, filename) = start_new_lame_stream()
+            if (len(replay_frames) > 0):
+                data = replay_frames.popleft()
+                lame.stdin.write(data)
+            else:
+               time.sleep(1)
+            if (utcmin != now.minute and now.minute % 10 == 0 and now.minute != 0):
+                print "CTL:", str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + "Z ...recording:", filename
+                contest_dir = "AUDIO_" + str(now.year)
+                if get_free_space_mb(contest_dir) < 100:
+                    print "CTL: WARNING: Low Disk space"
+                utcmin = now.minute
+
+
+
+# start hotkey monitoring thread
 t = threading.Thread(target=hotkey)
 t.start()
 
 
+
 print("--------------------------------------")
-print "v2.7 QSO Recorder for N1MM, 2015 K3IT\n"
+print "v2.8 QSO Recorder for N1MM, 2015 K3IT\n"
 print("--------------------------------------")
 
 p = pyaudio.PyAudio()
 
 if (options.query_inputs):
     max_devs = p.get_device_count()
-    # print "Detected", max_devs, "devices\n"
+    print "Detected", max_devs, "devices\n"       ################################
     print "Device index Description"
     print "------------ -----------"
     for i in range(max_devs):
+        p = pyaudio.PyAudio()
         devinfo = p.get_device_info_by_index(i)
 
         if devinfo['maxInputChannels'] > 0:
@@ -248,7 +340,7 @@ if (options.query_inputs):
                                          input_device=devinfo['index'],
                                          input_channels=devinfo['maxInputChannels'],
                                          input_format=pyaudio.paInt16):
-                    print "\t", i, "\t", devinfo['name']
+                        print "\t", i, "\t", devinfo['name']
             except ValueError:
                 pass
         p.terminate()
@@ -275,7 +367,12 @@ else:
         p.terminate()
         os._exit(-1)
 
+# queue for chunked recording
 frames = deque('', dqlength)
+
+# queue for continous recording
+replay_frames = deque('',dqlength)
+
 
 
 print "Listening on UDP port", MYPORT
@@ -284,6 +381,8 @@ print "Listening on UDP port", MYPORT
 # define callback
 def callback(in_data, frame_count, time_info, status):
     frames.append(in_data)
+    # add code for continous recording here
+    replay_frames.append(in_data)
     return (None, pyaudio.paContinue)
 
 
@@ -304,7 +403,15 @@ print "Output directory", os.getcwd() + "\\<contest...>"
 print "Hotkey: CTRL+ALT+" + HOTKEY
 if (options.station_nr >= 0):
     print "Recording only station", options.station_nr, "QSOs"
-print("\t--------------------------------")
+if (options.continuous):
+    print "Full contest recording enabled."
+print("\t--------------------------------\n")
+
+
+#start continious mp3 writer thread
+if (options.continuous):
+    mp3 = threading.Thread(target=writer)
+    mp3.start()
 
 
 # listen on UDP port
