@@ -1,0 +1,16 @@
+In localized versions of windows qsorder may fail to start properly due to an error in encoding handling in the pyadio library.   This happens when the recording device name contains certain "localized" characters.   The work around is to rename the audio input name to contain only latin characters (through windows device properties)
+
+See screen shot here: http://www.cqham.ru/forum/showthread.php?t=61&p=739777&viewfull=1#post739777
+
+=====================================
+
+Co-existing with other UDP based plugins for N1MM:
+
+There is a possibility of a conflict with other plugins using UDP, if they open the port for exclusive access (for example MultChaser and Frequency Display plugins do that, as of this writing Jan 2013).  This prevents UDP packets from reaching qsorder.   With the latest changes (N1MM v13 and up) in broadcast config it's possible to specify dedicated ports for different plugins.  Pick a unique port for the QSORDER and it will always work. 
+
+=====================================
+
+Windows Time format:
+
+In some contries time format is HH.MM.SS (period as a separator) - qsorder does not parse this correctly
+You can change Windows regional settings (in Control Panel) to use the colon. HH:MM:SS works fine
