@@ -1,0 +1,49 @@
+v2.8
+ - uninterrupted recording mode (with the -C or "--continuous" flag), parrallel to recording of individual QSOs
+   hourly audio files are saved in the AUDIO_YEAR directory, a new mp3 file is created at the top of each hour.
+   Extra Disk space required for this option: ~360 MB per 24 hours
+ - increased sampling rate from 8000 to 11025
+ - pyaduio library updated to version 0.2.8 https://people.csail.mit.edu/hubert/pyaudio/
+ - allow cp1251 character set in the recording device names (tnx ua9lif)
+ 
+v2.7
+ - pyinstaller updated to 2.1 https://github.com/pyinstaller/pyinstaller/wiki
+
+v2.6b
+input selection options, debug option, skip old qsos
+	- new flags -q, -i, -D to allow sound input selection and the debug log.
+	- skip udp packets for old QSO, for example ignore QSO edits
+
+v2.5b
+ - fixes for N1MM integration issues. Play Contact now works for phone contests 
+ - SO2R Mode (--so2r flag).  Connect Left Radio to Left audio channel, Right Radio to the Right channel.  
+     In this mode QSORDER will downmix the "active" audio input to MP3 mono, and mute the "inactive" radio input. 
+     In other words - Radio 1 QSOs will be recorded from the Left Ch, Radio 2 QSOs - from the Right Ch.
+     without this flag both Left and Right channels are saved to a stereo file.
+     HOT KEY - always saves in stereo
+ - yet another change of the default global hot-key (to CTRL-ALT-O)
+ - see BUGS.txt for known issues with qsorder
+
+v2.4b
+change to CTRL-ALT-M as the default hot-key. 
+Bug fix in mp3 conversion routine
+
+v2.3b
+added a global hot-key (default CTRL+ALT+R).  
+  pushing the hotkey immediately saves the current audio buffer to a file.  
+  (qsorder window does not need to be in focus).  
+improvement in file/directory naming
+
+
+v2.2b
+added UDP --port and --station-nr options for Multi-Multi setups
+
+v2.1b
+added optional -l (buffer length), -d (delay), -p (path), command line flags
+added conversion to mp3 with (included) lame.exe encoder
+fix handling of / in callsigns
+add ReplayGain indicator to the output
+save audio files into a <contest-year> directory
+
+v2.1a
+initial version (tnx n4zr,dk8nt,n2ic and others)
