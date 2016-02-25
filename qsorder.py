@@ -290,6 +290,9 @@ def writer():
         utchr = now.hour
         utcmin = now.minute
         (lame, filename) = start_new_lame_stream()
+        start = time.clock() * 1000
+        bytes_written = 0
+        avg_rate = 0
         while True:
             #open a new file on top of the hour
             now = datetime.datetime.utcnow()
@@ -302,8 +305,16 @@ def writer():
             if (len(replay_frames) > 0):
                 data = replay_frames.popleft()
                 lame.stdin.write(data)
+                bytes_written += sys.getsizeof(data)
             else:
-               time.sleep(1)
+                end = time.clock()*1000
+                if (end - start > 60000):
+                    elapsed = end - start
+                    sampling_rate = bytes_written/4/elapsed
+                    print bytes_written, "bytes in ", elapsed, "ms. Sampling rate:", sampling_rate, "kHz"
+                    start = end
+                    bytes_written=0
+                time.sleep(1)
             if (utcmin != now.minute and now.minute % 10 == 0 and now.minute != 0):
                 print "CTL:", str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + "Z ...recording:", filename
                 contest_dir = "AUDIO_" + str(now.year)
