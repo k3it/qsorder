@@ -69,56 +69,6 @@ MYPORT = 12060
 DEBUG_FILE = "qsorder-debug-log.txt"
 
 
-usage = "usage: %prog [OPTION]..."
-parser = OptionParser()
-parser.add_option("-D", "--debug", action="store_true", default=False,
-                        help="Save debug info[default=%default]")
-parser.add_option("-d", "--delay", type="int", default=20,
-                        help="Capture x seconds after QSO log entry [default=%default]")
-parser.add_option("-i", "--device-index", type="int", default=None,
-                        help="Index of the recording input (use -q to list) [default=%default]")
-parser.add_option("-k", "--hot-key", type="string", default="O",
-                        help="Hotkey for manual recording Ctrl-Alt-<hot_key> [default=%default]")
-parser.add_option("-l", "--buffer-length", type="int", default=45,
-                        help="Audio buffer length in secs [default=%default]")
-# parser.add_option("-m", "--use-month", action="store_true", default=False,
-#                         help="Include month and mode in the contest directory [default=%default]")
-parser.add_option("-C", "--continuous", action="store_true", default=False,
-                        help="Record continuous audio stream in addition to individual QSOs[default=%default]")
-parser.add_option("-P", "--port", type="int", default=12060,
-                        help="UDP Port [default=%default]")
-parser.add_option("-p", "--path", type="string", default=None,
-                        help="Base directory for audio files [default=%default]")
-parser.add_option("-q", "--query-inputs", action="store_true", default=False,
-                        help="Query and print input devices [default=%default]")
-parser.add_option("-S", "--so2r", action="store_true", default=False,
-                        help="SO2R mode, downmix to mono: Left Ch - Radio1 QSOs, Right Ch - Radio2 QSOs [default=%default]")
-parser.add_option("-s", "--station-nr", type="int", default=None,
-                        help="Network Station Number [default=%default]")
-
-
-
-(options, args) = parser.parse_args()
-
-dqlength = int(options.buffer_length * RATE / CHUNK) + 1
-DELAY = options.delay
-MYPORT = options.port
-
-if (options.path):
-    os.chdir(options.path)
-
-if (len(options.hot_key) == 1):
-    HOTKEY = options.hot_key.upper()
-else:
-    print "Hotkey should be a single character"
-    parser.print_help()
-    exit(-1)
-
-if (options.debug):
-    logging.basicConfig(filename=DEBUG_FILE, level=logging.DEBUG, format='%(asctime)s %(message)s')
-    logging.debug('debug log started')
-    logging.debug('qsorder options:')
-    logging.debug(options)
 
 
 class wave_file:
@@ -334,6 +284,59 @@ def writer():
 
 
 def main():
+
+    usage = "usage: %prog [OPTION]..."
+    parser = OptionParser()
+    parser.add_option("-D", "--debug", action="store_true", default=False,
+                            help="Save debug info[default=%default]")
+    parser.add_option("-d", "--delay", type="int", default=20,
+                            help="Capture x seconds after QSO log entry [default=%default]")
+    parser.add_option("-i", "--device-index", type="int", default=None,
+                            help="Index of the recording input (use -q to list) [default=%default]")
+    parser.add_option("-k", "--hot-key", type="string", default="O",
+                            help="Hotkey for manual recording Ctrl-Alt-<hot_key> [default=%default]")
+    parser.add_option("-l", "--buffer-length", type="int", default=45,
+                            help="Audio buffer length in secs [default=%default]")
+    # parser.add_option("-m", "--use-month", action="store_true", default=False,
+    #                         help="Include month and mode in the contest directory [default=%default]")
+    parser.add_option("-C", "--continuous", action="store_true", default=False,
+                            help="Record continuous audio stream in addition to individual QSOs[default=%default]")
+    parser.add_option("-P", "--port", type="int", default=12060,
+                            help="UDP Port [default=%default]")
+    parser.add_option("-p", "--path", type="string", default=None,
+                            help="Base directory for audio files [default=%default]")
+    parser.add_option("-q", "--query-inputs", action="store_true", default=False,
+                            help="Query and print input devices [default=%default]")
+    parser.add_option("-S", "--so2r", action="store_true", default=False,
+                            help="SO2R mode, downmix to mono: Left Ch - Radio1 QSOs, Right Ch - Radio2 QSOs [default=%default]")
+    parser.add_option("-s", "--station-nr", type="int", default=None,
+                            help="Network Station Number [default=%default]")
+
+
+
+    (options, args) = parser.parse_args()
+
+    dqlength = int(options.buffer_length * RATE / CHUNK) + 1
+    DELAY = options.delay
+    MYPORT = options.port
+
+    if (options.path):
+        os.chdir(options.path)
+
+    if (len(options.hot_key) == 1):
+        HOTKEY = options.hot_key.upper()
+    else:
+        print "Hotkey should be a single character"
+        parser.print_help()
+        exit(-1)
+
+    if (options.debug):
+        logging.basicConfig(filename=DEBUG_FILE, level=logging.DEBUG, format='%(asctime)s %(message)s')
+        logging.debug('debug log started')
+        logging.debug('qsorder options:')
+        logging.debug(options)
+
+
 
     # start hotkey monitoring thread
     if not nopyhk:
