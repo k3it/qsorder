@@ -1,1 +1,2 @@
 pyaudio
+python-dateutil
