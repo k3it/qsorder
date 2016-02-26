@@ -32,7 +32,14 @@ import sys
 import threading
 # import string
 import binascii
-import pyhk
+
+try:
+    import pyhk
+    nopyhk = False
+except:
+    nopyhk = True
+
+
 import platform
 import ctypes
 
@@ -222,6 +229,8 @@ def manual_dump():
 
 
 def hotkey():
+    if nopyhk:
+        return
     # create pyhk class instance
     hot = pyhk.pyhk()
 
@@ -327,8 +336,9 @@ def writer():
 def main():
 
     # start hotkey monitoring thread
-    t = threading.Thread(target=hotkey)
-    t.start()
+    if not nopyhk:
+        t = threading.Thread(target=hotkey)
+        t.start()
 
 
 
@@ -416,7 +426,10 @@ def main():
 
     print "* recording", CHANNELS, "ch,", dqlength * CHUNK / RATE, "secs audio buffer, Delay:", DELAY, "secs"
     print "Output directory", os.getcwd() + "\\<contest...>"
-    print "Hotkey: CTRL+ALT+" + HOTKEY
+    if nopyhk:
+        print("Hotkey functionality is disabled")
+    else:
+        print "Hotkey: CTRL+ALT+" + HOTKEY
     if (options.station_nr >= 0):
         print "Recording only station", options.station_nr, "QSOs"
     if (options.continuous):
