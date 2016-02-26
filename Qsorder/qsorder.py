@@ -324,194 +324,202 @@ def writer():
 
 
 
-# start hotkey monitoring thread
-t = threading.Thread(target=hotkey)
-t.start()
+def main():
+
+    # start hotkey monitoring thread
+    t = threading.Thread(target=hotkey)
+    t.start()
 
 
 
-print("--------------------------------------")
-print "v2.8 QSO Recorder for N1MM, 2015 K3IT\n"
-print("--------------------------------------")
+    print("--------------------------------------")
+    print "v2.8 QSO Recorder for N1MM, 2015 K3IT\n"
+    print("--------------------------------------")
 
-p = pyaudio.PyAudio()
+    global p
+    p = pyaudio.PyAudio()
 
-if (options.query_inputs):
-    max_devs = p.get_device_count()
-    print "Detected", max_devs, "devices\n"       ################################
-    print "Device index Description"
-    print "------------ -----------"
-    for i in range(max_devs):
-        p = pyaudio.PyAudio()
-        devinfo = p.get_device_info_by_index(i)
+    if (options.query_inputs):
+        max_devs = p.get_device_count()
+        print "Detected", max_devs, "devices\n"       ################################
+        print "Device index Description"
+        print "------------ -----------"
+        for i in range(max_devs):
+            p = pyaudio.PyAudio()
+            devinfo = p.get_device_info_by_index(i)
 
-        if devinfo['maxInputChannels'] > 0:
-            try:
-                if p.is_format_supported(int(RATE),
-                                         input_device=devinfo['index'],
-                                         input_channels=devinfo['maxInputChannels'],
-                                         input_format=pyaudio.paInt16):
-                        print "\t", i, "\t", devinfo['name']
-            except ValueError:
-                pass
-        p.terminate()
-    os._exit(0)
+            if devinfo['maxInputChannels'] > 0:
+                try:
+                    if p.is_format_supported(int(RATE),
+                                             input_device=devinfo['index'],
+                                             input_channels=devinfo['maxInputChannels'],
+                                             input_format=pyaudio.paInt16):
+                            print "\t", i, "\t", devinfo['name']
+                except ValueError:
+                    pass
+            p.terminate()
+        os._exit(0)
 
 
-if (options.device_index):
+    if (options.device_index):
+        try:
+            def_index = p.get_device_info_by_index(options.device_index)
+            print "Input Device :", def_index['name']
+            DEVINDEX = options.device_index
+        except IOError as e:
+            print("Invalid Input device: %s" % e[0])
+            p.terminate()
+            os._exit(-1)
+
+    else:
+        try:
+            def_index = p.get_default_input_device_info()
+            print "Input Device :", def_index['index'], def_index['name']
+            DEVINDEX = def_index['index']
+        except IOError as e:
+            print("No Input devices: %s" % e[0])
+            p.terminate()
+            os._exit(-1)
+
+    # queue for chunked recording
+    global frames
+    frames = deque('', dqlength)
+
+    # queue for continous recording
+    global replay_frames
+    replay_frames = deque('',dqlength)
+
+
+
+    print "Listening on UDP port", MYPORT
+
+
+    # define callback
+    def callback(in_data, frame_count, time_info, status):
+        frames.append(in_data)
+        # add code for continous recording here
+        replay_frames.append(in_data)
+        return (None, pyaudio.paContinue)
+
+
+    stream = p.open(format=FORMAT,
+                    channels=CHANNELS,
+                    input_device_index=DEVINDEX,
+                    rate=RATE,
+                    input=True,
+                    frames_per_buffer=CHUNK,
+                    stream_callback=callback)
+
+    # start the stream
+    stream.start_stream()
+
+
+    print "* recording", CHANNELS, "ch,", dqlength * CHUNK / RATE, "secs audio buffer, Delay:", DELAY, "secs"
+    print "Output directory", os.getcwd() + "\\<contest...>"
+    print "Hotkey: CTRL+ALT+" + HOTKEY
+    if (options.station_nr >= 0):
+        print "Recording only station", options.station_nr, "QSOs"
+    if (options.continuous):
+        print "Full contest recording enabled."
+    print("\t--------------------------------\n")
+
+
+    #start continious mp3 writer thread
+    if (options.continuous):
+        mp3 = threading.Thread(target=writer)
+        mp3.start()
+
+
+    # listen on UDP port
+    # Receive UDP packets transmitted by a broadcasting service
+
+    s = socket(AF_INET, SOCK_DGRAM)
+    s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+    s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
     try:
-        def_index = p.get_device_info_by_index(options.device_index)
-        print "Input Device :", def_index['name']
-        DEVINDEX = options.device_index
-    except IOError as e:
-        print("Invalid Input device: %s" % e[0])
-        p.terminate()
-        os._exit(-1)
-
-else:
-    try:
-        def_index = p.get_default_input_device_info()
-        print "Input Device :", def_index['index'], def_index['name']
-        DEVINDEX = def_index['index']
-    except IOError as e:
-        print("No Input devices: %s" % e[0])
-        p.terminate()
-        os._exit(-1)
-
-# queue for chunked recording
-frames = deque('', dqlength)
-
-# queue for continous recording
-replay_frames = deque('',dqlength)
+            s.bind(('', MYPORT))
+    except:
+            print "Error connecting to the UDP stream."
 
 
+    seen = {}
 
-print "Listening on UDP port", MYPORT
+    while stream.is_active():
+        try:
+            udp_data = s.recv(2048)
+            check_sum = binascii.crc32(udp_data)
+            dom = parseString(udp_data)
 
-
-# define callback
-def callback(in_data, frame_count, time_info, status):
-    frames.append(in_data)
-    # add code for continous recording here
-    replay_frames.append(in_data)
-    return (None, pyaudio.paContinue)
-
-
-stream = p.open(format=FORMAT,
-                channels=CHANNELS,
-                input_device_index=DEVINDEX,
-                rate=RATE,
-                input=True,
-                frames_per_buffer=CHUNK,
-                stream_callback=callback)
-
-# start the stream
-stream.start_stream()
-
-
-print "* recording", CHANNELS, "ch,", dqlength * CHUNK / RATE, "secs audio buffer, Delay:", DELAY, "secs"
-print "Output directory", os.getcwd() + "\\<contest...>"
-print "Hotkey: CTRL+ALT+" + HOTKEY
-if (options.station_nr >= 0):
-    print "Recording only station", options.station_nr, "QSOs"
-if (options.continuous):
-    print "Full contest recording enabled."
-print("\t--------------------------------\n")
-
-
-#start continious mp3 writer thread
-if (options.continuous):
-    mp3 = threading.Thread(target=writer)
-    mp3.start()
-
-
-# listen on UDP port
-# Receive UDP packets transmitted by a broadcasting service
-
-s = socket(AF_INET, SOCK_DGRAM)
-s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
-s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-try:
-        s.bind(('', MYPORT))
-except:
-        print "Error connecting to the UDP stream."
-
-
-seen = {}
-
-while stream.is_active():
-    try:
-        udp_data = s.recv(2048)
-        check_sum = binascii.crc32(udp_data)
-        dom = parseString(udp_data)
-
-        if (options.debug):
-            logging.debug('UDP Packet Received:')
-            logging.debug(udp_data)
-
-        # skip packet if duplicate
-        if check_sum in seen:
-            seen[check_sum] += 1
             if (options.debug):
-                logging.debug('DUPE packet skipped')
-        else:
-            seen[check_sum] = 1
-            try:
-                now = datetime.datetime.utcnow()
+                logging.debug('UDP Packet Received:')
+                logging.debug(udp_data)
 
-                # read UDP fields
-                dom = parseString(udp_data)
-                call = dom.getElementsByTagName("call")[0].firstChild.nodeValue
-                mycall = dom.getElementsByTagName("mycall")[0].firstChild.nodeValue
-                mode = dom.getElementsByTagName("mode")[0].firstChild.nodeValue
-                freq = dom.getElementsByTagName("band")[0].firstChild.nodeValue
-                contest = dom.getElementsByTagName("contestname")[0].firstChild.nodeValue
-                station = dom.getElementsByTagName("NetworkedCompNr")[0].firstChild.nodeValue
-                qso_timestamp = dom.getElementsByTagName("timestamp")[0].firstChild.nodeValue
-                radio_nr = dom.getElementsByTagName("radionr")[0].firstChild.nodeValue
-
-                # convert qso_timestamp to datetime object
-                timestamp = dateutil.parser.parse(qso_timestamp)
-
-                # verify that month matches, if not, give DD-MM-YY format precendense
-                if (timestamp.strftime("%m") != now.strftime("%m")):
-                    timestamp = dateutil.parser.parse(qso_timestamp, dayfirst=True)
-
-                # skip packet if not matching network station number specified in the command line
-                if (options.station_nr >= 0):
-                    if (options.station_nr != station):
-                        print "QSO:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring from stn", station
-                        continue
-
-                # skip packet if QSO was more than DELAY seconds ago
-                t_delta = (now - timestamp).total_seconds()
-                if (t_delta > DELAY):
-                        print "---:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring ",\
-                            t_delta, "sec old QSO"
-                        continue
-
-                calls = call + "_de_" + mycall
-
-                # if (mode == "USB" or mode == "LSB"):
-                #   mode="SSB"
-
-                # t = threading.Timer( DELAY, dump_audio,[calls,contest,mode,freq,datetime.datetime.utcnow()] )
-                t = threading.Timer(DELAY, dump_audio, [calls, contest, mode, freq, timestamp, radio_nr])
-                print "QSO:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq
-                t.start()
-            except:
+            # skip packet if duplicate
+            if check_sum in seen:
+                seen[check_sum] += 1
                 if (options.debug):
-                    logging.debug('Could not parse previous packet')
-                pass  # ignore, probably some other udp packet
+                    logging.debug('DUPE packet skipped')
+            else:
+                seen[check_sum] = 1
+                try:
+                    now = datetime.datetime.utcnow()
 
-    except (KeyboardInterrupt):
-        print "73! k3it"
-        stream.stop_stream()
-        stream.close()
-        p.terminate()
-        raise
+                    # read UDP fields
+                    dom = parseString(udp_data)
+                    call = dom.getElementsByTagName("call")[0].firstChild.nodeValue
+                    mycall = dom.getElementsByTagName("mycall")[0].firstChild.nodeValue
+                    mode = dom.getElementsByTagName("mode")[0].firstChild.nodeValue
+                    freq = dom.getElementsByTagName("band")[0].firstChild.nodeValue
+                    contest = dom.getElementsByTagName("contestname")[0].firstChild.nodeValue
+                    station = dom.getElementsByTagName("NetworkedCompNr")[0].firstChild.nodeValue
+                    qso_timestamp = dom.getElementsByTagName("timestamp")[0].firstChild.nodeValue
+                    radio_nr = dom.getElementsByTagName("radionr")[0].firstChild.nodeValue
+
+                    # convert qso_timestamp to datetime object
+                    timestamp = dateutil.parser.parse(qso_timestamp)
+
+                    # verify that month matches, if not, give DD-MM-YY format precendense
+                    if (timestamp.strftime("%m") != now.strftime("%m")):
+                        timestamp = dateutil.parser.parse(qso_timestamp, dayfirst=True)
+
+                    # skip packet if not matching network station number specified in the command line
+                    if (options.station_nr >= 0):
+                        if (options.station_nr != station):
+                            print "QSO:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring from stn", station
+                            continue
+
+                    # skip packet if QSO was more than DELAY seconds ago
+                    t_delta = (now - timestamp).total_seconds()
+                    if (t_delta > DELAY):
+                            print "---:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring ",\
+                                t_delta, "sec old QSO"
+                            continue
+
+                    calls = call + "_de_" + mycall
+
+                    # if (mode == "USB" or mode == "LSB"):
+                    #   mode="SSB"
+
+                    # t = threading.Timer( DELAY, dump_audio,[calls,contest,mode,freq,datetime.datetime.utcnow()] )
+                    t = threading.Timer(DELAY, dump_audio, [calls, contest, mode, freq, timestamp, radio_nr])
+                    print "QSO:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq
+                    t.start()
+                except:
+                    if (options.debug):
+                        logging.debug('Could not parse previous packet')
+                    pass  # ignore, probably some other udp packet
+
+        except (KeyboardInterrupt):
+            print "73! k3it"
+            stream.stop_stream()
+            stream.close()
+            p.terminate()
+            raise
 
 
-#
-stream.close()
-p.terminate()
+    #
+    stream.close()
+    p.terminate()
+
+if __name__ == '__main__':    
+    main()
