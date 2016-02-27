@@ -283,7 +283,7 @@ def writer():
 
 
 
-def main():
+def main(argslist=None):
 
     usage = "usage: %prog [OPTION]..."
     parser = OptionParser()
@@ -313,8 +313,10 @@ def main():
                             help="Network Station Number [default=%default]")
 
 
+    global options
+    # arglist can be passed from another python script or at the command line
+    (options, args) = parser.parse_args(argslist)
 
-    (options, args) = parser.parse_args()
 
     dqlength = int(options.buffer_length * RATE / CHUNK) + 1
     DELAY = options.delay
@@ -324,6 +326,7 @@ def main():
         os.chdir(options.path)
 
     if (len(options.hot_key) == 1):
+        global HOTKEY
         HOTKEY = options.hot_key.upper()
     else:
         print "Hotkey should be a single character"
@@ -341,6 +344,7 @@ def main():
     # start hotkey monitoring thread
     if not nopyhk:
         t = threading.Thread(target=hotkey)
+        t.setDaemon(True)
         t.start()
 
 
@@ -523,14 +527,16 @@ def main():
                 except:
                     if (options.debug):
                         logging.debug('Could not parse previous packet')
+
+                    print sys.exc_info()
                     pass  # ignore, probably some other udp packet
 
         except (KeyboardInterrupt):
-            print "73! k3it"
+            print "73! K3IT"
             stream.stop_stream()
             stream.close()
             p.terminate()
-            raise
+            exit(0)
 
 
     #
