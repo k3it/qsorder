@@ -1,6 +1,9 @@
 import sys
 import logging
 import unittest
+from nose.tools import timed
+from time import sleep
+
 
 import cProfile, pstats
 
@@ -15,6 +18,10 @@ class ModTest(unittest.TestCase):
 		argslist = ['-h']
 		with self.assertRaises(SystemExit):
 			qsorder.main(argslist=argslist)
+
+	@timed(2)
+	def test_a(self):
+		sleep(3)
 
 
 if __name__ == '__main__':    

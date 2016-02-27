@@ -462,9 +462,14 @@ def main(argslist=None):
             print "Error connecting to the UDP stream."
 
 
+
     seen = {}
 
-    while stream.is_active():
+    # this is needed to control loop exit from the unit tests
+    def true_func():
+        return True
+
+    while stream.is_active() and true_func():
         try:
             udp_data = s.recv(2048)
             check_sum = binascii.crc32(udp_data)
@@ -527,8 +532,7 @@ def main(argslist=None):
                 except:
                     if (options.debug):
                         logging.debug('Could not parse previous packet')
-
-                    print sys.exc_info()
+                        logging.debug(sys.exc_info())
                     pass  # ignore, probably some other udp packet
 
         except (KeyboardInterrupt):
