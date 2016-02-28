@@ -51,7 +51,7 @@ from collections import deque
 from socket import *
 # from xml.dom.minidom import parse, parseString
 from xml.dom.minidom import parseString
-
+import xml.parsers.expat
 
 
 import logging
@@ -283,7 +283,9 @@ def writer():
 
 
 
-def main(argslist=None):
+def main(argslist=None, loop_count=-1):
+
+    loop_count = -loop_count
 
     usage = "usage: %prog [OPTION]..."
     parser = OptionParser()
@@ -469,11 +471,19 @@ def main(argslist=None):
     def true_func():
         return True
 
-    while stream.is_active() and true_func():
+    while stream.is_active() and true_func:
         try:
             udp_data = s.recv(2048)
             check_sum = binascii.crc32(udp_data)
-            dom = parseString(udp_data)
+            try:
+                dom = parseString(udp_data)
+            except xml.parsers.expat.ExpatError, e:
+                pass
+
+            if (udp_data == "qsorder_exit_loop_DEADBEEF"):
+                print "Received magic Exit packet"
+                break
+
 
             if (options.debug):
                 logging.debug('UDP Packet Received:')
@@ -533,6 +543,7 @@ def main(argslist=None):
                     if (options.debug):
                         logging.debug('Could not parse previous packet')
                         logging.debug(sys.exc_info())
+
                     pass  # ignore, probably some other udp packet
 
         except (KeyboardInterrupt):
