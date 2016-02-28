@@ -32,7 +32,7 @@ class simpleUDPBcast(object):
 		    sleep(2)
 		    data = "qsorder_exit_loop_DEADBEEF"
 		    s.sendto(data, ('<broadcast>', MYPORT))
-		    
+
 
 
 class ModTest(unittest.TestCase):
@@ -45,6 +45,10 @@ class ModTest(unittest.TestCase):
 		with self.assertRaises(SystemExit):
 			qsorder.main(argslist=argslist)
 
+	def testCheckIndex(self):
+		argslist = ['-q']
+		with self.assertRaises(SystemExit):
+			qsorder.main(argslist=argslist)
 
 	t = threading.Thread(target=simpleUDPBcast)
 	t.setDaemon(True)
