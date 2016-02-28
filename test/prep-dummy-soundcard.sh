@@ -1,4 +1,4 @@
-cat << EOF > ~/.asoundrc
+cat << EOF > /home/travis/.asoundrc
        pcm.dummy {
           type hw
           card 0
@@ -9,6 +9,7 @@ cat << EOF > ~/.asoundrc
           card 0
        }
 EOF
+chmod go+r /home/travis/.asoundrc
 cat << EOF >> /etc/modules.conf
 # OSS/Free portion - card #1
 alias sound-slot-0 snd-card-0
