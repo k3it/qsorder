@@ -15,6 +15,7 @@ before_install:
   - sudo bash test/prep-dummy-soundcard.sh
   - sudo modprobe snd-dummy
   - sudo lsmod
+  - aplay -l
 install: 
   - pip install -r requirements.txt
   - pip install coveralls
