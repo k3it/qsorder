@@ -377,7 +377,8 @@ def main(argslist=None, loop_count=-1):
                 except ValueError:
                     pass
             p.terminate()
-        os._exit(0)
+        # os._exit(0)
+        exit(0)
 
 
     if (options.device_index):

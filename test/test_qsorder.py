@@ -45,10 +45,10 @@ class ModTest(unittest.TestCase):
 		with self.assertRaises(SystemExit):
 			qsorder.main(argslist=argslist)
 
-	def testCheckIndex(self):
+
+	def testIndex(self):
 		argslist = ['-q']
-		with self.assertRaises(SystemExit):
-			qsorder.main(argslist=argslist)
+		qsorder.main(argslist)
 
 	t = threading.Thread(target=simpleUDPBcast)
 	t.setDaemon(True)
@@ -57,6 +57,7 @@ class ModTest(unittest.TestCase):
 	def test_a(self):
 		argslist = ['-P ' + str(MYPORT)]
 		qsorder.main(argslist)
+
 	
 
 if __name__ == '__main__':    
