@@ -13,6 +13,7 @@ before_install:
   - sudo modprobe snd-dummy
   - sudo apt-get install -y portaudio19-dev
   - sudo bash test/prep-dummy-soundcard.sh
+  - bash test/prep-dummy-soundcard2.sh
 install: 
   - pip install -r requirements.txt
   - pip install coveralls
