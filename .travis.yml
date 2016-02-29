@@ -18,7 +18,7 @@ before_install:
   - aplay -l 
   - pwd
   - type nosetests
-  - sudo -E su $USER -c pwd
+  - sudo -E su $USER -c type nosetests
   - sudo aplay -l
 install: 
   - pip install -r requirements.txt
