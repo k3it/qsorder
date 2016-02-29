@@ -47,8 +47,9 @@ class ModTest(unittest.TestCase):
 
 
 	def testIndex(self):
-		argslist = ['-q']
-		qsorder.main(argslist)
+		with self.assertRaises(SystemExit):
+			argslist = ['-q']
+			qsorder.main(argslist)
 
 	t = threading.Thread(target=simpleUDPBcast)
 	t.setDaemon(True)
