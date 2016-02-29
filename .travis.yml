@@ -28,7 +28,7 @@ env:
 
 # command to run tests
 script: 
-   - sudo -E su $USER "nosetests --with-coverage --cover-package=Qsorder"
+   - sudo -E su $USER -c "nosetests --with-coverage --cover-package=Qsorder"
 
 after_success:
     - coveralls
