@@ -16,6 +16,9 @@ before_install:
   - sudo bash test/prep-dummy-soundcard.sh
   - sudo lsmod
   - aplay -l 
+  - pwd
+  - type nosetests
+  - sudo -E su $USER -c pwd
   - sudo aplay -l
 install: 
   - pip install -r requirements.txt
