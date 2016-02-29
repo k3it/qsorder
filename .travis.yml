@@ -25,8 +25,8 @@ env:
 
 # command to run tests
 script:
-  - set
-  - sudo -E su $USER -c "source ~/virtualenv/python2.7/bin/activate; nosetests --with-coverage --cover-package=Qsorder"
+  - type activate
+  - sudo -E su $USER -c "source activate; nosetests --with-coverage --cover-package=Qsorder"
   
 after_success:
     - coveralls
