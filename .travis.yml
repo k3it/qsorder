@@ -29,7 +29,7 @@ script:
   - type nosetests
   - sudo -E sudo -u $USER -E bash -c 'type nosetests'
   - sudo -E sudo -u $USER -E bash -c 'aplay -l'
-  - sudo -E sudo -u $USER -E bash -c "nosetests --with-coverage --cover-package=Qsorder"
+  - sudo -E sudo -u $USER -E bash -c "source ~/virtualenv/python2.7/bin/activate; nosetests --with-coverage --cover-package=Qsorder"
 
 after_success:
     - coveralls
