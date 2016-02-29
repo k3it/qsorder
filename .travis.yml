@@ -11,7 +11,6 @@ python:
 before_install:
   - sudo apt-get update -qq
   - sudo usermod -a -G audio travis
-  - newgrp
   - sudo apt-get install -y portaudio19-dev
   - sudo apt-get install -y libasound2-dev alsa-utils alsa-oss
   - sudo bash test/prep-dummy-soundcard.sh
@@ -29,7 +28,7 @@ env:
 
 # command to run tests
 script: 
-   - nosetests --with-coverage --cover-package=Qsorder
+   - sudo -E su $USER nosetests --with-coverage --cover-package=Qsorder
 
 after_success:
     - coveralls
