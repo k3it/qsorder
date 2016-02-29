@@ -10,7 +10,7 @@ python:
 # command to install dependencies
 before_install:
   - sudo apt-get update -qq
-  - useradd -G audio travis
+  - sudo usermod -a -G audio travis
   - sudo apt-get install -y portaudio19-dev
   - sudo apt-get install -y libasound2-dev alsa-utils alsa-oss
   - sudo bash test/prep-dummy-soundcard.sh
