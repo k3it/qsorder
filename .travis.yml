@@ -23,7 +23,6 @@ env:
   global:
     AUDIODEV=null
 
-
 # command to run tests
 script:
   - type nosetests
