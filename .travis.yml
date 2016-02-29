@@ -14,9 +14,7 @@ before_install:
   - sudo apt-get install -y portaudio19-dev
   - sudo apt-get install -y libasound2-dev alsa-utils alsa-oss
   - sudo bash test/prep-dummy-soundcard.sh
-  - sudo lsmod
-  - aplay -l 
-  - sudo aplay -l
+
 install: 
   - pip install -r requirements.txt
   - pip install coveralls
@@ -25,10 +23,12 @@ env:
   global:
     AUDIODEV=null
 
-
 # command to run tests
-script: 
-   - sudo -E su $USER "nosetests --with-coverage --cover-package=Qsorder"
+script:
+  - type nosetests
+  - sudo -E sudo -u $USER -E bash -c 'type nosetests'
+  - sudo -E sudo -u $USER -E bash -c 'aplay -l'
+  - sudo -E sudo -u $USER -E bash -c "source ~/virtualenv/python2.7/bin/activate; nosetests --with-coverage --cover-package=Qsorder"
 
 after_success:
     - coveralls
