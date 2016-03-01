@@ -146,6 +146,11 @@ def dump_audio(call, contest, mode, freq, qso_time, radio_nr):
     lame_path = os.path.dirname(os.path.realpath(__file__))
     lame_path += "\\lame.exe"
 
+    if not os.path.isfile(lame_path):
+        #try to use one in the system path
+        lame_path = 'lame'
+
+
     if (options.so2r and radio_nr == "1"):
         command = [lame_path]
         arguments = ["-h", "-m", "m", "--scale-l", "2", "--scale-r", "0", w.wavfile]
