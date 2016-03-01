@@ -526,9 +526,14 @@ def main(argslist=None, loop_count=-1):
                     # skip packet if QSO was more than DELAY seconds ago
                     t_delta = (now - timestamp).total_seconds()
                     if (t_delta > DELAY):
-                            print "---:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring ",\
-                                t_delta, "sec old QSO"
-                            continue
+                        print "---:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring ",\
+                            t_delta, "sec old QSO. Check clock settings?"
+                        continue
+                    elif (t_delta < -DELAY):
+                        print "---:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring ",\
+                            -t_delta, "sec QSO in the 'future'. Check clock settings?"
+                        continue
+
 
                     calls = call + "_de_" + mycall
 
