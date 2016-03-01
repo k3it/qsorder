@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<contactinfo>
+        <contestname>ARRLDXCW</contestname>
+        <contestnr>16</contestnr>
+        <timestamp>2016-03-01 00:12:19</timestamp>
+        <mycall>K3IT</mycall>
+        <band>14</band>
+        <rxfreq>1402886</rxfreq>
+        <txfreq>1402886</txfreq>
+        <operator>K3IT</operator>
+        <mode>CW</mode>
+        <call>UT4UWB</call>
+        <countryprefix>UR</countryprefix>
+        <wpxprefix>UT4</wpxprefix>
+        <stationprefix>K3IT</stationprefix>
+        <continent>EU</continent>
+        <snt>599</snt>
+        <sntnr>206</sntnr>
+        <rcv>599</rcv>
+        <rcvnr>0</rcvnr>
+        <gridsquare></gridsquare>
+        <exchange1></exchange1>
+        <section></section>
+        <comment></comment>
+        <qth></qth>
+        <name></name>
+        <power>10</power>
+        <misctext></misctext>
+        <zone>16</zone>
+        <prec></prec>
+        <ck>0</ck>
+        <ismultiplier1>0</ismultiplier1>
+        <ismultiplier2>0</ismultiplier2>
+        <ismultiplier3>0</ismultiplier3>
+        <points>0</points>
+        <radionr>1</radionr>
+        <RoverLocation></RoverLocation>
+        <RadioInterfaced>1</RadioInterfaced>
+        <NetworkedCompNr>0</NetworkedCompNr>
+        <IsOriginal>True</IsOriginal>
+        <NetBiosName>POBEGUNCHIK</NetBiosName>
+        <IsRunQSO>1</IsRunQSO>
+</contactinfo>
