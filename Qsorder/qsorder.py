@@ -210,6 +210,11 @@ def start_new_lame_stream():
     lame_path = os.path.dirname(os.path.realpath(__file__))
     lame_path += "\\lame.exe"
 
+    if not os.path.isfile(lame_path):
+        #try to use one in the system path
+        lame_path = 'lame'
+
+
 
     # print "CTL: Starting new mp3 file", datetime.datetime.utcnow.strftime("%m-%d %H:%M:%S")
     now = datetime.datetime.utcnow()
@@ -454,6 +459,7 @@ def main(argslist=None, loop_count=-1):
     #start continious mp3 writer thread
     if (options.continuous):
         mp3 = threading.Thread(target=writer)
+        mp3.setDaemon(True)
         mp3.start()
 
 

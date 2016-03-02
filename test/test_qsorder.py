@@ -136,7 +136,16 @@ class ModTest(unittest.TestCase):
 		# check for mp3 conversion also
 		verification_output = "ReplayGain:"
 		self.assertIn(verification_output, output)
-		
+
+	def testContinous(self):
+		# with self.assertRaises(SystemExit):
+		argslist = ['-C']
+		output = checkUDPparsing("None",argslist=argslist).get_output()
+		verification_output = "started new .mp3 file:"
+		self.assertIn(verification_output, sys.stdout.getvalue())
+		verification_output = "Disk free space:"
+		self.assertIn(verification_output, sys.stdout.getvalue())
+
 
 
 
