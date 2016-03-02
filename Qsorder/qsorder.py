@@ -242,7 +242,7 @@ def start_new_lame_stream():
         mp3handle = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
     except:
         print "CTL error starting mp3 recording.  Exiting.."
-        os._exit(-1)
+        exit(-1)
 
     print "CTL:", str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + "Z started new .mp3 file: ", filename
     print "CTL: Disk free space:", get_free_space_mb(contest_dir)/1024, "GB"
