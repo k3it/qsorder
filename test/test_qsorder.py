@@ -78,7 +78,7 @@ class ModTest(unittest.TestCase):
 
 	def testDelay(self):
 		# with self.assertRaises(SystemExit):
-		argslist = ['-d 2']
+		argslist = ['-d 2', '-i 0', '-D']
 		output = checkUDPparsing("None",argslist=argslist).get_output()
 		verification_output = "Delay: 2 secs"
 		self.assertIn(verification_output, sys.stdout.getvalue())
