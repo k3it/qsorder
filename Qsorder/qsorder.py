@@ -75,12 +75,8 @@ class wave_file:
         """
         class definition for the WAV file object
         """
-        def __init__(self, samp_rate, LO, BASENAME, qso_time, contest_dir, mode):
-                # starttime/endtime
-                self.create_time = time.time()
-                # now=datetime.datetime.utcnow()
+        def __init__(self, samp_rate, LO, BASENAME, qso_time, contest_dir, mode, sampwidth):
                 now = qso_time
-                # finish=now + datetime.timedelta(seconds=duration)
 
                 self.wavfile = BASENAME + "_"
                 self.wavfile += str(now.year)
@@ -97,13 +93,7 @@ class wave_file:
 
                 # contest directory
                 self.contest_dir = contest_dir
-                # if (options.use_month):
-                #     self.contest_dir = contest_dir.replace(mode,'')
-                #     self.contest_dir += "_" + mode + "_" + now.strftime("%B").upper() + "_" + str(now.year)
-                # else:
                 self.contest_dir += "_" + str(now.year)
-
-
 
                 # fix slash in the file/directory name
                 self.wavfile = self.wavfile.replace('/', '-')
@@ -122,7 +112,7 @@ class wave_file:
                 # 16 bit complex samples
                 # self.w.setparams((2, 2, samp_rate, 1, 'NONE', 'not compressed'))
                 self.w.setnchannels(CHANNELS)
-                self.w.setsampwidth(p.get_sample_size(FORMAT))
+                self.w.setsampwidth(sampwidth)
                 self.w.setframerate(RATE)
                 # self.w.close()
 
@@ -133,11 +123,11 @@ class wave_file:
                 self.w.close()
 
 
-def dump_audio(call, contest, mode, freq, qso_time, radio_nr):
+def dump_audio(call, contest, mode, freq, qso_time, radio_nr, sampwidth):
     # create the wave file
     BASENAME = call + "_" + contest + "_" + mode
     BASENAME = BASENAME.replace('/', '-')
-    w = wave_file(RATE, freq, BASENAME, qso_time, contest, mode)
+    w = wave_file(RATE, freq, BASENAME, qso_time, contest, mode, sampwidth)
     __data = (b''.join(frames))
     bytes_written = w.write(__data)
     w.close_wave()
@@ -242,7 +232,7 @@ def start_new_lame_stream():
         mp3handle = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
     except:
         print "CTL error starting mp3 recording.  Exiting.."
-        os._exit(-1)
+        os.exit(-1)
 
     print "CTL:", str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + "Z started new .mp3 file: ", filename
     print "CTL: Disk free space:", get_free_space_mb(contest_dir)/1024, "GB"
@@ -293,9 +283,7 @@ def writer():
 
 
 
-def main(argslist=None, loop_count=-1):
-
-    loop_count = -loop_count
+def main(argslist=None):
 
     usage = "usage: %prog [OPTION]..."
     parser = OptionParser()
@@ -365,7 +353,7 @@ def main(argslist=None, loop_count=-1):
     print "v2.8 QSO Recorder for N1MM, 2015 K3IT\n"
     print("--------------------------------------")
 
-    global p
+    # global p
     p = pyaudio.PyAudio()
 
     if (options.query_inputs):
@@ -441,6 +429,8 @@ def main(argslist=None, loop_count=-1):
 
     # start the stream
     stream.start_stream()
+
+    sampwidth = p.get_sample_size(FORMAT)
 
 
     print "* recording", CHANNELS, "ch,", dqlength * CHUNK / RATE, "secs audio buffer, Delay:", DELAY, "secs"
@@ -552,7 +542,7 @@ def main(argslist=None, loop_count=-1):
                     #   mode="SSB"
 
                     # t = threading.Timer( DELAY, dump_audio,[calls,contest,mode,freq,datetime.datetime.utcnow()] )
-                    t = threading.Timer(DELAY, dump_audio, [calls, contest, mode, freq, timestamp, radio_nr])
+                    t = threading.Timer(DELAY, dump_audio, [calls, contest, mode, freq, timestamp, radio_nr, sampwidth])
                     print "QSO:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq
                     t.start()
                 except:
