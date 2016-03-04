@@ -122,7 +122,6 @@ class wave_file:
         def close_wave(self, nextfilename=''):
                 self.w.close()
 
-
 def dump_audio(call, contest, mode, freq, qso_time, radio_nr, sampwidth):
     # create the wave file
     BASENAME = call + "_" + contest + "_" + mode
@@ -167,11 +166,9 @@ def dump_audio(call, contest, mode, freq, qso_time, radio_nr, sampwidth):
     except:
         print "could not convert wav to mp3", w.wavfile
 
-
 def manual_dump():
     print "QSO:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), "HOTKEY pressed"
     dump_audio("HOTKEY", "AUDIO", "RF", 0, datetime.datetime.utcnow(), 73)
-
 
 def hotkey():
     if nopyhk:
@@ -193,7 +190,6 @@ def get_free_space_mb(folder):
     else:
         st = os.statvfs(folder)
         return st.f_bavail * st.f_frsize/1024/1024
-
 
 def start_new_lame_stream():
 
@@ -240,8 +236,6 @@ def start_new_lame_stream():
         print "CTL: WARNING: Low Disk space"
     return mp3handle,filename
 
-
-
 #write continious mp3 stream to disk in a separate worker thread
 def writer():
         # start new lame recording
@@ -280,8 +274,6 @@ def writer():
                 if get_free_space_mb(contest_dir) < 100:
                     print "CTL: WARNING: Low Disk space"
                 utcmin = now.minute
-
-
 
 def main(argslist=None):
 
