@@ -287,8 +287,6 @@ def main(argslist=None):
                             help="Hotkey for manual recording Ctrl-Alt-<hot_key> [default=%(default)s]")
     parser.add_argument("-l", "--buffer-length", type=int, default=45,
                             help="Audio buffer length in secs [default=%(default)s]")
-    # parser.add_argument("-m", "--use-month", action="store_true", default=False,
-    #                         help="Include month and mode in the contest directory [default=%(default)s]")
     parser.add_argument("-C", "--continuous", action="store_true", default=False,
                             help="Record continuous audio stream in addition to individual QSOs[default=%(default)s]")
     parser.add_argument("-P", "--port", type=int, default=12060,
@@ -306,7 +304,6 @@ def main(argslist=None):
     global options
     # arglist can be passed from another python script or at the command line
     options = parser.parse_args(argslist)
-
 
     dqlength = int(options.buffer_length * RATE / CHUNK) + 1
     DELAY = options.delay
@@ -528,10 +525,6 @@ def main(argslist=None):
 
                     calls = call + "_de_" + mycall
 
-                    # if (mode == "USB" or mode == "LSB"):
-                    #   mode="SSB"
-
-                    # t = threading.Timer( DELAY, dump_audio,[calls,contest,mode,freq,datetime.datetime.utcnow()] )
                     t = threading.Timer(DELAY, dump_audio, [calls, contest, mode, freq, timestamp, radio_nr, sampwidth])
                     print "QSO:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq
                     t.start()
