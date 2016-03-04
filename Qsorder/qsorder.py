@@ -46,7 +46,7 @@ import ctypes
 import datetime
 import dateutil.parser
 
-from optparse import OptionParser
+import argparse
 from collections import deque
 from socket import *
 # from xml.dom.minidom import parse, parseString
@@ -67,8 +67,6 @@ dqlength = 360  # number of chunks to store in the buffer
 DELAY = 20.0
 MYPORT = 12060
 DEBUG_FILE = "qsorder-debug-log.txt"
-
-
 
 
 class wave_file:
@@ -278,36 +276,36 @@ def writer():
 def main(argslist=None):
 
     usage = "usage: %prog [OPTION]..."
-    parser = OptionParser()
-    parser.add_option("-D", "--debug", action="store_true", default=False,
-                            help="Save debug info[default=%default]")
-    parser.add_option("-d", "--delay", type="int", default=20,
-                            help="Capture x seconds after QSO log entry [default=%default]")
-    parser.add_option("-i", "--device-index", type="int", default=None,
-                            help="Index of the recording input (use -q to list) [default=%default]")
-    parser.add_option("-k", "--hot-key", type="string", default="O",
-                            help="Hotkey for manual recording Ctrl-Alt-<hot_key> [default=%default]")
-    parser.add_option("-l", "--buffer-length", type="int", default=45,
-                            help="Audio buffer length in secs [default=%default]")
-    # parser.add_option("-m", "--use-month", action="store_true", default=False,
-    #                         help="Include month and mode in the contest directory [default=%default]")
-    parser.add_option("-C", "--continuous", action="store_true", default=False,
-                            help="Record continuous audio stream in addition to individual QSOs[default=%default]")
-    parser.add_option("-P", "--port", type="int", default=12060,
-                            help="UDP Port [default=%default]")
-    parser.add_option("-p", "--path", type="string", default=None,
-                            help="Base directory for audio files [default=%default]")
-    parser.add_option("-q", "--query-inputs", action="store_true", default=False,
-                            help="Query and print input devices [default=%default]")
-    parser.add_option("-S", "--so2r", action="store_true", default=False,
-                            help="SO2R mode, downmix to mono: Left Ch - Radio1 QSOs, Right Ch - Radio2 QSOs [default=%default]")
-    parser.add_option("-s", "--station-nr", type="int", default=None,
-                            help="Network Station Number [default=%default]")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-D", "--debug", action="store_true", default=False,
+                            help="Save debug info[default=%(default)s]")
+    parser.add_argument("-d", "--delay", type=int, default=20,
+                            help="Capture x seconds after QSO log entry [default=%(default)s]")
+    parser.add_argument("-i", "--device-index", type=int, default=None,
+                            help="Index of the recording input (use -q to list) [default=%(default)s]")
+    parser.add_argument("-k", "--hot-key", type=str, default="O",
+                            help="Hotkey for manual recording Ctrl-Alt-<hot_key> [default=%(default)s]")
+    parser.add_argument("-l", "--buffer-length", type=int, default=45,
+                            help="Audio buffer length in secs [default=%(default)s]")
+    # parser.add_argument("-m", "--use-month", action="store_true", default=False,
+    #                         help="Include month and mode in the contest directory [default=%(default)s]")
+    parser.add_argument("-C", "--continuous", action="store_true", default=False,
+                            help="Record continuous audio stream in addition to individual QSOs[default=%(default)s]")
+    parser.add_argument("-P", "--port", type=int, default=12060,
+                            help="UDP Port [default=%(default)s]")
+    parser.add_argument("-p", "--path", type=str, default=None,
+                            help="Base directory for audio files [default=%(default)s]")
+    parser.add_argument("-q", "--query-inputs", action="store_true", default=False,
+                            help="Query and print input devices [default=%(default)s]")
+    parser.add_argument("-S", "--so2r", action="store_true", default=False,
+                            help="SO2R mode, downmix to mono: Left Ch - Radio1 QSOs, Right Ch - Radio2 QSOs [default=%(default)s]")
+    parser.add_argument("-s", "--station-nr", type=int, default=None,
+                            help="Network Station Number [default=%(default)s]")
 
 
     global options
     # arglist can be passed from another python script or at the command line
-    (options, args) = parser.parse_args(argslist)
+    options = parser.parse_args(argslist)
 
 
     dqlength = int(options.buffer_length * RATE / CHUNK) + 1
