@@ -56,6 +56,16 @@ import xml.parsers.expat
 
 import logging
 
+
+from PySide.QtCore import * 
+from PySide.QtGui import *
+from PySide.QtUiTools import *
+
+
+import pyqtgraph as pg
+
+
+
 CHUNK = 1024
 FORMAT = pyaudio.paInt16
 CHANNELS = 2
@@ -244,6 +254,7 @@ def writer():
         start = time.clock() * 1000
         bytes_written = 0
         avg_rate = 0
+        
         while True:
             #open a new file on top of the hour
             now = datetime.datetime.utcnow()
@@ -309,6 +320,42 @@ def main(argslist=None):
     DELAY = options.delay
     MYPORT = options.port
 
+    # global p
+    p = pyaudio.PyAudio()
+
+    max_devs = p.get_device_count()
+    inputs = {}
+    if (options.query_inputs):
+        print "Detected", max_devs, "devices\n"       ################################
+        print "Device index Description"
+        print "------------ -----------"
+    for i in range(max_devs):
+        p = pyaudio.PyAudio()
+        devinfo = p.get_device_info_by_index(i)
+
+        if devinfo['maxInputChannels'] > 0:
+            try:
+                if p.is_format_supported(int(RATE),
+                                         input_device=devinfo['index'],
+                                         input_channels=devinfo['maxInputChannels'],
+                                         input_format=pyaudio.paInt16):
+                    if (options.query_inputs):
+                        print "\t", i, "\t", devinfo['name']
+                    else:
+                        inputs[i] = devinfo['name']
+            except ValueError:
+                pass
+    p.terminate()
+    if (options.query_inputs):
+        exit(0)
+
+
+    app = QApplication(sys.argv)
+    qsorder = qsorderApp()
+    qsorder.ui.inputs.addItems(inputs.values())
+    sys.exit(app.exec_())
+
+
     if (options.path):
         os.chdir(options.path)
 
@@ -340,29 +387,6 @@ def main(argslist=None):
     print "v2.8 QSO Recorder for N1MM, 2015 K3IT\n"
     print("--------------------------------------")
 
-    # global p
-    p = pyaudio.PyAudio()
-
-    if (options.query_inputs):
-        max_devs = p.get_device_count()
-        print "Detected", max_devs, "devices\n"       ################################
-        print "Device index Description"
-        print "------------ -----------"
-        for i in range(max_devs):
-            p = pyaudio.PyAudio()
-            devinfo = p.get_device_info_by_index(i)
-
-            if devinfo['maxInputChannels'] > 0:
-                try:
-                    if p.is_format_supported(int(RATE),
-                                             input_device=devinfo['index'],
-                                             input_channels=devinfo['maxInputChannels'],
-                                             input_format=pyaudio.paInt16):
-                            print "\t", i, "\t", devinfo['name']
-                except ValueError:
-                    pass
-            p.terminate()
-        exit(0)
 
 
     if (options.device_index):
@@ -546,6 +570,73 @@ def main(argslist=None):
     #
     stream.close()
     p.terminate()
+
+
+class PlotWidget(pg.PlotWidget):
+    def __init__(self, parent):
+        super(PlotWidget, self).__init__()
+
+class qsorderApp(QWidget):
+    def __init__(self):
+        super(qsorderApp, self).__init__()
+        self.initUI()
+
+    def initUI(self):
+
+        self.loader = QUiLoader()
+        # self.loader.registerCustomWidget(PlotWidget)
+        self.ui = self.loader.load('qsorder.ui', self)
+
+
+        # self.setGeometry(300,300,250,150)
+        self.setWindowTitle('QSORDER')
+        self.setWindowIcon(QIcon('qsorder.png'))
+
+        # # Create some widgets to be placed inside
+        # self.stopbtn = QPushButton('Stop Qsorder')
+        # self.text = QTextEdit('some text 73!')
+        # self.text.setFont(self.font)
+
+        # self.plot = pg.PlotWidget()
+
+
+        # ## Create a grid layout to manage the widgets size and position
+        # self.layout = QGridLayout()
+        # self.setLayout(self.layout)
+        # ## Add widgets to the layout in their proper positions
+        # self.layout.addWidget(self.text, 1, 0)   # text edit goes in middle-left
+        # self.layout.addWidget(self.plot, 0, 1, 3, 2)  # plot goes on right side, spanning 3 rows
+        # self.layout.addWidget(self.stopbtn, 0, 0)   # button goes in upper-left
+
+        self.ui.quitButton.clicked.connect(QCoreApplication.instance().quit)
+
+        # process arguments
+        self.ui.buffer.setValue(options.buffer_length)
+        self.ui.delay.setValue(options.delay)
+        self.ui.port.setValue(options.port)
+        self.ui.path.setText(os.getcwd())
+        self.ui.hotkey.setText(options.hot_key.upper())
+        self.ui.debug.setChecked(options.debug)
+        self.ui.continuous.setChecked(options.continuous)
+        self.ui.so2r.setChecked(options.so2r)
+
+
+        self.show()
+
+        def _stopQsorder():
+            MYPORT = 12060
+            s = socket(AF_INET, SOCK_DGRAM)
+            s.bind(('', 0))
+            s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+            udp_packet = "qsorder_exit_loop_DEADBEEF"
+            s.sendto(udp_packet, ('<broadcast>', MYPORT))
+            s.close()
+
+
+
+
+
+
 
 if __name__ == '__main__':    
     main()
