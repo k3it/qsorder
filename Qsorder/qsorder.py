@@ -28,9 +28,7 @@ import pyaudio
 import wave
 import time
 import sys
-# import struct
 import threading
-# import string
 import binascii
 
 try:
@@ -49,7 +47,6 @@ import dateutil.parser
 import argparse
 from collections import deque
 from socket import *
-# from xml.dom.minidom import parse, parseString
 from xml.dom.minidom import parseString
 import xml.parsers.expat
 
@@ -60,9 +57,7 @@ import logging
 from PySide.QtCore import * 
 from PySide.QtGui import *
 from PySide.QtUiTools import *
-
-
-import pyqtgraph as pg
+from qgui import *
 
 
 
@@ -130,122 +125,127 @@ class wave_file:
         def close_wave(self, nextfilename=''):
                 self.w.close()
 
-def dump_audio(call, contest, mode, freq, qso_time, radio_nr, sampwidth):
-    # create the wave file
-    BASENAME = call + "_" + contest + "_" + mode
-    BASENAME = BASENAME.replace('/', '-')
-    w = wave_file(RATE, freq, BASENAME, qso_time, contest, mode, sampwidth)
-    __data = (b''.join(frames))
-    bytes_written = w.write(__data)
-    w.close_wave()
 
-    # try to convert to mp3
-    lame_path = os.path.dirname(os.path.realpath(__file__))
-    lame_path += "\\lame.exe"
+class qsorder(object):
+    def __init__(self,argslist=None):
+        self._parse_args(argslist)
 
-    if not os.path.isfile(lame_path):
-        #try to use one in the system path
-        lame_path = 'lame'
+    
+    def dump_audio(call, contest, mode, freq, qso_time, radio_nr, sampwidth):
+        # create the wave file
+        BASENAME = call + "_" + contest + "_" + mode
+        BASENAME = BASENAME.replace('/', '-')
+        w = wave_file(RATE, freq, BASENAME, qso_time, contest, mode, sampwidth)
+        __data = (b''.join(frames))
+        bytes_written = w.write(__data)
+        w.close_wave()
+
+        # try to convert to mp3
+        lame_path = os.path.dirname(os.path.realpath(__file__))
+        lame_path += "\\lame.exe"
+
+        if not os.path.isfile(lame_path):
+            #try to use one in the system path
+            lame_path = 'lame'
 
 
-    if (options.so2r and radio_nr == "1"):
+        if (self.options.so2r and radio_nr == "1"):
+            command = [lame_path]
+            arguments = ["-h", "-m", "m", "--scale-l", "2", "--scale-r", "0", w.wavfile]
+            command.extend(arguments)
+        elif (self.options.so2r and radio_nr == "2"):
+            command = [lame_path]
+            arguments = ["-h", "-m", "m", "--scale-l", "0", "--scale-r", "2", w.wavfile]
+            command.extend(arguments)
+        else:
+            command = [lame_path]
+            arguments = ["-h", w.wavfile]
+            command.extend(arguments)
+
+
+        try:
+            if (self.options.debug):
+                logging.debug(command)
+
+            output = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE).communicate()[0]
+            gain = re.search('\S*Replay.+', output)
+            print "WAV:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), BASENAME[:20] + ".." + str(freq) + "Mhz.mp3", \
+                gain.group(0)
+            os.remove(w.wavfile)
+        except:
+            print "could not convert wav to mp3", w.wavfile
+
+    def manual_dump():
+        print "QSO:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), "HOTKEY pressed"
+        dump_audio("HOTKEY", "AUDIO", "RF", 0, datetime.datetime.utcnow(), 73)
+
+    def hotkey():
+        if nopyhk:
+            return
+        # create pyhk class instance
+        hot = pyhk.pyhk()
+
+        # add hotkey
+        hot.addHotkey(['Ctrl', 'Alt', HOTKEY], manual_dump, isThread=False)
+        hot.start()
+
+    def get_free_space_mb(folder):
+        """ Return folder/drive free space (in bytes)
+        """
+        if platform.system() == 'Windows':
+            free_bytes = ctypes.c_ulonglong(0)
+            ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(folder), None, None, ctypes.pointer(free_bytes))
+            return free_bytes.value/1024/1024
+        else:
+            st = os.statvfs(folder)
+            return st.f_bavail * st.f_frsize/1024/1024
+
+    def start_new_lame_stream():
+        lame_path = os.path.dirname(os.path.realpath(__file__))
+        lame_path += "\\lame.exe"
+
+        if not os.path.isfile(lame_path):
+            #try to use one in the system path
+            lame_path = 'lame'
+
+
+
+        # print "CTL: Starting new mp3 file", datetime.datetime.utcnow.strftime("%m-%d %H:%M:%S")
+        now = datetime.datetime.utcnow()
+        contest_dir = "AUDIO_" + str(now.year)
+        if not os.path.exists(contest_dir):
+            os.makedirs(contest_dir)
+
+        BASENAME = "CONTEST_AUDIO"
+        filename = contest_dir + "/" + BASENAME + "_"
+        filename += str(now.year)
+        filename += str(now.month).zfill(2)
+        filename += str(now.day).zfill(2)
+        filename += "_"
+        filename += str(now.hour).zfill(2)
+        filename += str(now.minute).zfill(2)
+        filename += "Z"
+        # filename += str(int(LO/1000))
+        filename += ".mp3"
         command = [lame_path]
-        arguments = ["-h", "-m", "m", "--scale-l", "2", "--scale-r", "0", w.wavfile]
+        # arguments = ["-r", "-s", str(RATE), "-v", "--disptime 60", "-h", "--tt", BASENAME, "--ty", str(now.year), "--tg Ham Radio", "-", filename]
+        # arguments = ["-r", "-s", str(RATE), "-v", "-h", "--quiet", "--tt", BASENAME, "--ty", str(now.year), "-", filename]
+        arguments = ["-r", "-s", str(RATE), "-h", "--flush", "--quiet", "--tt", "Qsorder Contest Recording", "--ty", str(now.year), "--tc", os.path.basename(filename), "-", filename]
         command.extend(arguments)
-    elif (options.so2r and radio_nr == "2"):
-        command = [lame_path]
-        arguments = ["-h", "-m", "m", "--scale-l", "0", "--scale-r", "2", w.wavfile]
-        command.extend(arguments)
-    else:
-        command = [lame_path]
-        arguments = ["-h", w.wavfile]
-        command.extend(arguments)
+        try:
+            mp3handle = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+        except:
+            print "CTL error starting mp3 recording.  Exiting.."
+            exit(-1)
 
+        print "CTL:", str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + "Z started new .mp3 file: ", filename
+        print "CTL: Disk free space:", get_free_space_mb(contest_dir)/1024, "GB"
+        if get_free_space_mb(contest_dir) < 100:
+            print "CTL: WARNING: Low Disk space"
+        return mp3handle,filename
+        #write continious mp3 stream to disk in a separate worker thread
 
-    try:
-        if (options.debug):
-            logging.debug(command)
-
-        output = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE).communicate()[0]
-        gain = re.search('\S*Replay.+', output)
-        print "WAV:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), BASENAME[:20] + ".." + str(freq) + "Mhz.mp3", \
-            gain.group(0)
-        os.remove(w.wavfile)
-    except:
-        print "could not convert wav to mp3", w.wavfile
-
-def manual_dump():
-    print "QSO:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), "HOTKEY pressed"
-    dump_audio("HOTKEY", "AUDIO", "RF", 0, datetime.datetime.utcnow(), 73)
-
-def hotkey():
-    if nopyhk:
-        return
-    # create pyhk class instance
-    hot = pyhk.pyhk()
-
-    # add hotkey
-    hot.addHotkey(['Ctrl', 'Alt', HOTKEY], manual_dump, isThread=False)
-    hot.start()
-
-def get_free_space_mb(folder):
-    """ Return folder/drive free space (in bytes)
-    """
-    if platform.system() == 'Windows':
-        free_bytes = ctypes.c_ulonglong(0)
-        ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(folder), None, None, ctypes.pointer(free_bytes))
-        return free_bytes.value/1024/1024
-    else:
-        st = os.statvfs(folder)
-        return st.f_bavail * st.f_frsize/1024/1024
-
-def start_new_lame_stream():
-
-    lame_path = os.path.dirname(os.path.realpath(__file__))
-    lame_path += "\\lame.exe"
-
-    if not os.path.isfile(lame_path):
-        #try to use one in the system path
-        lame_path = 'lame'
-
-
-
-    # print "CTL: Starting new mp3 file", datetime.datetime.utcnow.strftime("%m-%d %H:%M:%S")
-    now = datetime.datetime.utcnow()
-    contest_dir = "AUDIO_" + str(now.year)
-    if not os.path.exists(contest_dir):
-        os.makedirs(contest_dir)
-
-    BASENAME = "CONTEST_AUDIO"
-    filename = contest_dir + "/" + BASENAME + "_"
-    filename += str(now.year)
-    filename += str(now.month).zfill(2)
-    filename += str(now.day).zfill(2)
-    filename += "_"
-    filename += str(now.hour).zfill(2)
-    filename += str(now.minute).zfill(2)
-    filename += "Z"
-    # filename += str(int(LO/1000))
-    filename += ".mp3"
-    command = [lame_path]
-    # arguments = ["-r", "-s", str(RATE), "-v", "--disptime 60", "-h", "--tt", BASENAME, "--ty", str(now.year), "--tg Ham Radio", "-", filename]
-    # arguments = ["-r", "-s", str(RATE), "-v", "-h", "--quiet", "--tt", BASENAME, "--ty", str(now.year), "-", filename]
-    arguments = ["-r", "-s", str(RATE), "-h", "--flush", "--quiet", "--tt", "Qsorder Contest Recording", "--ty", str(now.year), "--tc", os.path.basename(filename), "-", filename]
-    command.extend(arguments)
-    try:
-        mp3handle = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
-    except:
-        print "CTL error starting mp3 recording.  Exiting.."
-        exit(-1)
-
-    print "CTL:", str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + "Z started new .mp3 file: ", filename
-    print "CTL: Disk free space:", get_free_space_mb(contest_dir)/1024, "GB"
-    if get_free_space_mb(contest_dir) < 100:
-        print "CTL: WARNING: Low Disk space"
-    return mp3handle,filename
-
-#write continious mp3 stream to disk in a separate worker thread
-def writer():
+    def writer():
         # start new lame recording
         now = datetime.datetime.utcnow()
         utchr = now.hour
@@ -284,359 +284,309 @@ def writer():
                     print "CTL: WARNING: Low Disk space"
                 utcmin = now.minute
 
-def main(argslist=None):
 
-    usage = "usage: %prog [OPTION]..."
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-D", "--debug", action="store_true", default=False,
-                            help="Save debug info[default=%(default)s]")
-    parser.add_argument("-d", "--delay", type=int, default=20,
-                            help="Capture x seconds after QSO log entry [default=%(default)s]")
-    parser.add_argument("-i", "--device-index", type=int, default=None,
-                            help="Index of the recording input (use -q to list) [default=%(default)s]")
-    parser.add_argument("-k", "--hot-key", type=str, default="O",
-                            help="Hotkey for manual recording Ctrl-Alt-<hot_key> [default=%(default)s]")
-    parser.add_argument("-l", "--buffer-length", type=int, default=45,
-                            help="Audio buffer length in secs [default=%(default)s]")
-    parser.add_argument("-C", "--continuous", action="store_true", default=False,
-                            help="Record continuous audio stream in addition to individual QSOs[default=%(default)s]")
-    parser.add_argument("-P", "--port", type=int, default=12060,
-                            help="UDP Port [default=%(default)s]")
-    parser.add_argument("-p", "--path", type=str, default=None,
-                            help="Base directory for audio files [default=%(default)s]")
-    parser.add_argument("-q", "--query-inputs", action="store_true", default=False,
-                            help="Query and print input devices [default=%(default)s]")
-    parser.add_argument("-S", "--so2r", action="store_true", default=False,
-                            help="SO2R mode, downmix to mono: Left Ch - Radio1 QSOs, Right Ch - Radio2 QSOs [default=%(default)s]")
-    parser.add_argument("-s", "--station-nr", type=int, default=None,
-                            help="Network Station Number [default=%(default)s]")
-
-
-    global options
-    # arglist can be passed from another python script or at the command line
-    options = parser.parse_args(argslist)
-
-    dqlength = int(options.buffer_length * RATE / CHUNK) + 1
-    DELAY = options.delay
-    MYPORT = options.port
-
-    # global p
-    p = pyaudio.PyAudio()
-
-    max_devs = p.get_device_count()
-    inputs = {}
-    if (options.query_inputs):
-        print "Detected", max_devs, "devices\n"       ################################
-        print "Device index Description"
-        print "------------ -----------"
-    for i in range(max_devs):
-        p = pyaudio.PyAudio()
-        devinfo = p.get_device_info_by_index(i)
-
-        if devinfo['maxInputChannels'] > 0:
-            try:
-                if p.is_format_supported(int(RATE),
-                                         input_device=devinfo['index'],
-                                         input_channels=devinfo['maxInputChannels'],
-                                         input_format=pyaudio.paInt16):
-                    if (options.query_inputs):
-                        print "\t", i, "\t", devinfo['name']
-                    else:
-                        inputs[i] = devinfo['name']
-            except ValueError:
-                pass
-    p.terminate()
-    if (options.query_inputs):
-        exit(0)
+    def _parse_args(self, argslist):
+        usage = "usage: %prog [OPTION]..."
+        parser = argparse.ArgumentParser()
+        parser.add_argument("-D", "--debug", action="store_true", default=False,
+                                help="Save debug info[default=%(default)s]")
+        parser.add_argument("-d", "--delay", type=int, default=20,
+                                help="Capture x seconds after QSO log entry [default=%(default)s]")
+        parser.add_argument("-i", "--device-index", type=int, default=None,
+                                help="Index of the recording input (use -q to list) [default=%(default)s]")
+        parser.add_argument("-k", "--hot-key", type=str, default="O",
+                                help="Hotkey for manual recording Ctrl-Alt-<hot_key> [default=%(default)s]")
+        parser.add_argument("-l", "--buffer-length", type=int, default=45,
+                                help="Audio buffer length in secs [default=%(default)s]")
+        parser.add_argument("-C", "--continuous", action="store_true", default=False,
+                                help="Record continuous audio stream in addition to individual QSOs[default=%(default)s]")
+        parser.add_argument("-P", "--port", type=int, default=12060,
+                                help="UDP Port [default=%(default)s]")
+        parser.add_argument("-p", "--path", type=str, default=None,
+                                help="Base directory for audio files [default=%(default)s]")
+        parser.add_argument("-q", "--query-inputs", action="store_true", default=False,
+                                help="Query and print input devices [default=%(default)s]")
+        parser.add_argument("-S", "--so2r", action="store_true", default=False,
+                                help="SO2R mode, downmix to mono: Left Ch - Radio1 QSOs, Right Ch - Radio2 QSOs [default=%(default)s]")
+        parser.add_argument("-s", "--station-nr", type=int, default=None,
+                                help="Network Station Number [default=%(default)s]")
 
 
-    app = QApplication(sys.argv)
-    qsorder = qsorderApp()
-    qsorder.ui.inputs.addItems(inputs.values())
-    sys.exit(app.exec_())
+        # global self.options
+        # arglist can be passed from another python script or at the command line
+        self.options = parser.parse_args(argslist)
 
+        # global p
+        self.p = pyaudio.PyAudio()
 
-    if (options.path):
-        os.chdir(options.path)
+        max_devs = self.p.get_device_count()
+        inputs = {}
+        if (self.options.query_inputs):
+            print "Detected", max_devs, "devices\n"       ################################
+            print "Device index Description"
+            print "------------ -----------"
+        for i in range(max_devs):
+            p = pyaudio.PyAudio()
+            devinfo = self.p.get_device_info_by_index(i)
 
-    if (len(options.hot_key) == 1):
-        global HOTKEY
-        HOTKEY = options.hot_key.upper()
-    else:
-        print "Hotkey should be a single character"
-        parser.print_help()
-        exit(-1)
-
-    if (options.debug):
-        logging.basicConfig(filename=DEBUG_FILE, level=logging.DEBUG, format='%(asctime)s %(message)s')
-        logging.debug('debug log started')
-        logging.debug('qsorder options:')
-        logging.debug(options)
-
-
-
-    # start hotkey monitoring thread
-    if not nopyhk:
-        t = threading.Thread(target=hotkey)
-        t.setDaemon(True)
-        t.start()
-
-
-
-    print("--------------------------------------")
-    print "v2.8 QSO Recorder for N1MM, 2015 K3IT\n"
-    print("--------------------------------------")
-
-
-
-    if (options.device_index):
-        try:
-            def_index = p.get_device_info_by_index(options.device_index)
-            print "Input Device :", def_index['name']
-            DEVINDEX = options.device_index
-        except IOError as e:
-            print("Invalid Input device: %s" % e[0])
-            p.terminate()
-            os._exit(-1)
-
-    else:
-        try:
-            def_index = p.get_default_input_device_info()
-            print "Input Device :", def_index['index'], def_index['name']
-            DEVINDEX = def_index['index']
-        except IOError as e:
-            print("No Input devices: %s" % e[0])
-            p.terminate()
-            os._exit(-1)
-
-    # queue for chunked recording
-    global frames
-    frames = deque('', dqlength)
-
-    # queue for continous recording
-    global replay_frames
-    replay_frames = deque('',dqlength)
-
-
-
-    print "Listening on UDP port", MYPORT
-
-
-    # define callback
-    def callback(in_data, frame_count, time_info, status):
-        frames.append(in_data)
-        # add code for continous recording here
-        replay_frames.append(in_data)
-        return (None, pyaudio.paContinue)
-
-
-    stream = p.open(format=FORMAT,
-                    channels=CHANNELS,
-                    input_device_index=DEVINDEX,
-                    rate=RATE,
-                    input=True,
-                    frames_per_buffer=CHUNK,
-                    stream_callback=callback)
-
-    # start the stream
-    stream.start_stream()
-
-    sampwidth = p.get_sample_size(FORMAT)
-
-
-    print "* recording", CHANNELS, "ch,", dqlength * CHUNK / RATE, "secs audio buffer, Delay:", DELAY, "secs"
-    print "Output directory", os.getcwd() + "\\<contest...>"
-    if nopyhk:
-        print("Hotkey functionality is disabled")
-    else:
-        print "Hotkey: CTRL+ALT+" + HOTKEY
-    if (options.station_nr >= 0):
-        print "Recording only station", options.station_nr, "QSOs"
-    if (options.continuous):
-        print "Full contest recording enabled."
-    print("\t--------------------------------\n")
-
-
-    #start continious mp3 writer thread
-    if (options.continuous):
-        mp3 = threading.Thread(target=writer)
-        mp3.setDaemon(True)
-        mp3.start()
-
-
-    # listen on UDP port
-    # Receive UDP packets transmitted by a broadcasting service
-
-    s = socket(AF_INET, SOCK_DGRAM)
-    s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
-    s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-    try:
-            s.bind(('', MYPORT))
-    except:
-            print "Error connecting to the UDP stream."
-
-
-
-    seen = {}
-
-    # this is needed to control loop exit from the unit tests
-    def true_func():
-        return True
-
-    while stream.is_active() and true_func:
-        try:
-            udp_data = s.recv(2048)
-            check_sum = binascii.crc32(udp_data)
-            try:
-                dom = parseString(udp_data)
-            except xml.parsers.expat.ExpatError, e:
-                pass
-
-            if (udp_data == "qsorder_exit_loop_DEADBEEF"):
-                print "Received magic Exit packet"
-                break
-
-
-            if (options.debug):
-                logging.debug('UDP Packet Received:')
-                logging.debug(udp_data)
-
-            # skip packet if duplicate
-            if check_sum in seen:
-                seen[check_sum] += 1
-                if (options.debug):
-                    logging.debug('DUPE packet skipped')
-            else:
-                seen[check_sum] = 1
+            if devinfo['maxInputChannels'] > 0:
                 try:
-                    now = datetime.datetime.utcnow()
-
-                    # read UDP fields
-                    dom = parseString(udp_data)
-                    call = dom.getElementsByTagName("call")[0].firstChild.nodeValue
-                    mycall = dom.getElementsByTagName("mycall")[0].firstChild.nodeValue
-                    mode = dom.getElementsByTagName("mode")[0].firstChild.nodeValue
-                    freq = dom.getElementsByTagName("band")[0].firstChild.nodeValue
-                    contest = dom.getElementsByTagName("contestname")[0].firstChild.nodeValue
-                    station = dom.getElementsByTagName("NetworkedCompNr")[0].firstChild.nodeValue
-                    qso_timestamp = dom.getElementsByTagName("timestamp")[0].firstChild.nodeValue
-                    radio_nr = dom.getElementsByTagName("radionr")[0].firstChild.nodeValue
-
-                    # convert qso_timestamp to datetime object
-                    timestamp = dateutil.parser.parse(qso_timestamp)
-
-                    # verify that month matches, if not, give DD-MM-YY format precendense
-                    if (timestamp.strftime("%m") != now.strftime("%m")):
-                        timestamp = dateutil.parser.parse(qso_timestamp, dayfirst=True)
-
-                    # skip packet if not matching network station number specified in the command line
-                    if (options.station_nr >= 0):
-                        if (options.station_nr != station):
-                            print "QSO:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring from stn", station
-                            continue
-
-                    # skip packet if QSO was more than DELAY seconds ago
-                    t_delta = (now - timestamp).total_seconds()
-                    if (t_delta > DELAY):
-                        print "---:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring ",\
-                            t_delta, "sec old QSO. Check clock settings?"
-                        continue
-                    elif (t_delta < -DELAY):
-                        print "---:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring ",\
-                            -t_delta, "sec QSO in the 'future'. Check clock settings?"
-                        continue
-
-
-                    calls = call + "_de_" + mycall
-
-                    t = threading.Timer(DELAY, dump_audio, [calls, contest, mode, freq, timestamp, radio_nr, sampwidth])
-                    print "QSO:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq
-                    t.start()
-                except:
-                    if (options.debug):
-                        logging.debug('Could not parse previous packet')
-                        logging.debug(sys.exc_info())
-
-                    pass  # ignore, probably some other udp packet
-
-        except (KeyboardInterrupt):
-            print "73! K3IT"
-            stream.stop_stream()
-            stream.close()
-            p.terminate()
+                    if self.p.is_format_supported(int(RATE),
+                                             input_device=devinfo['index'],
+                                             input_channels=devinfo['maxInputChannels'],
+                                             input_format=pyaudio.paInt16):
+                        if (self.options.query_inputs):
+                            print "\t", i, "\t", devinfo['name']
+                        else:
+                            inputs[i] = devinfo['name']
+                except ValueError:
+                    pass
+        self.p.terminate()
+        if (self.options.query_inputs):
             exit(0)
 
 
-    #
-    stream.close()
-    p.terminate()
+        
+        app = QApplication(sys.argv)
+        self.qsorder = qsorderApp(self.options)
+        self.qsorder.ui.inputs.addItems(inputs.values())
+
+        self.qsorder.ui.applyButton.clicked.connect(self._apply_settings)
+
+        sys.exit(app.exec_())
+
+    def _apply_settings(self):
+        self.options.buffer_length = self.qsorder.ui.buffer.value()
+        self.options.delay = self.qsorder.ui.delay.value()
+        self.options.port = self.qsorder.ui.port.value()
+        self.options.path = self.qsorder.ui.path.text()
+        self.options.hot_key = self.qsorder.ui.hotkey.text()
+        self.options.debug = self.qsorder.ui.debug.isChecked()
+        self.options.continuous = self.qsorder.ui.continuous.isChecked()
+        self.options.so2r = self.qsorder.ui.so2r.isChecked()
+        print "updated parameters"
+
+        self._stopQsorder()
+        self.recording_loop()
 
 
-class PlotWidget(pg.PlotWidget):
-    def __init__(self, parent):
-        super(PlotWidget, self).__init__()
-
-class qsorderApp(QWidget):
-    def __init__(self):
-        super(qsorderApp, self).__init__()
-        self.initUI()
-
-    def initUI(self):
-
-        self.loader = QUiLoader()
-        # self.loader.registerCustomWidget(PlotWidget)
-        self.ui = self.loader.load('qsorder.ui', self)
-
-
-        # self.setGeometry(300,300,250,150)
-        self.setWindowTitle('QSORDER')
-        self.setWindowIcon(QIcon('qsorder.png'))
-
-        # # Create some widgets to be placed inside
-        # self.stopbtn = QPushButton('Stop Qsorder')
-        # self.text = QTextEdit('some text 73!')
-        # self.text.setFont(self.font)
-
-        # self.plot = pg.PlotWidget()
-
-
-        # ## Create a grid layout to manage the widgets size and position
-        # self.layout = QGridLayout()
-        # self.setLayout(self.layout)
-        # ## Add widgets to the layout in their proper positions
-        # self.layout.addWidget(self.text, 1, 0)   # text edit goes in middle-left
-        # self.layout.addWidget(self.plot, 0, 1, 3, 2)  # plot goes on right side, spanning 3 rows
-        # self.layout.addWidget(self.stopbtn, 0, 0)   # button goes in upper-left
-
-        self.ui.quitButton.clicked.connect(QCoreApplication.instance().quit)
-
-        # process arguments
-        self.ui.buffer.setValue(options.buffer_length)
-        self.ui.delay.setValue(options.delay)
-        self.ui.port.setValue(options.port)
-        self.ui.path.setText(os.getcwd())
-        self.ui.hotkey.setText(options.hot_key.upper())
-        self.ui.debug.setChecked(options.debug)
-        self.ui.continuous.setChecked(options.continuous)
-        self.ui.so2r.setChecked(options.so2r)
-
-
-        self.show()
-
-        def _stopQsorder():
-            MYPORT = 12060
-            s = socket(AF_INET, SOCK_DGRAM)
-            s.bind(('', 0))
-            s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
-            udp_packet = "qsorder_exit_loop_DEADBEEF"
-            s.sendto(udp_packet, ('<broadcast>', MYPORT))
-            s.close()
+    def _stopQsorder(self):
+        # MYPORT = self.options.port
+        s = socket(AF_INET, SOCK_DGRAM)
+        s.bind(('', 0))
+        s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+        udp_packet = "qsorder_exit_loop_DEADBEEF"
+        s.sendto(udp_packet, ('<broadcast>', MYPORT))
+        s.close()
 
 
 
+    def recording_loop(self):
+        dqlength = int(self.options.buffer_length * RATE / CHUNK) + 1
+        DELAY = self.options.delay
+        MYPORT = self.options.port
+
+        if (self.options.path):
+            os.chdir(self.options.path)
+
+        if (len(self.options.hot_key) == 1):
+            global HOTKEY
+            HOTKEY = self.options.hot_key.upper()
+        else:
+            print "Hotkey should be a single character"
+            parser.print_help()
+            exit(-1)
+
+        if (self.options.debug):
+            logging.basicConfig(filename=DEBUG_FILE, level=logging.DEBUG, format='%(asctime)s %(message)s')
+            logging.debug('debug log started')
+            logging.debug('qsorder self.options:')
+            logging.debug(self.options)
 
 
+        # start hotkey monitoring thread
+        if not nopyhk:
+            t = threading.Thread(target=hotkey)
+            t.setDaemon(True)
+            t.start()
+
+
+        print("--------------------------------------")
+        print "v2.8 QSO Recorder for N1MM, 2015 K3IT\n"
+        print("--------------------------------------")
+
+
+        if (self.options.device_index):
+            try:
+                def_index = self.p.get_device_info_by_index(self.options.device_index)
+                print "Input Device :", def_index['name']
+                DEVINDEX = self.options.device_index
+            except IOError as e:
+                print("Invalid Input device: %s" % e[0])
+                self.p.terminate()
+                os._exit(-1)
+
+        else:
+            try:
+                def_index = self.p.get_default_input_device_info()
+                print "Input Device :", def_index['index'], def_index['name']
+                DEVINDEX = def_index['index']
+            except IOError as e:
+                print("No Input devices: %s" % e[0])
+                self.p.terminate()
+                os._exit(-1)
+
+        # queue for chunked recording
+        global frames
+        frames = deque('', dqlength)
+
+        # queue for continous recording
+        global replay_frames
+        replay_frames = deque('',dqlength)
+
+        print "Listening on UDP port", MYPORT
+
+        # define callback
+        def callback(in_data, frame_count, time_info, status):
+            frames.append(in_data)
+            # add code for continous recording here
+            replay_frames.append(in_data)
+            return (None, pyaudio.paContinue)
+
+
+        stream = self.p.open(format=FORMAT,
+                        channels=CHANNELS,
+                        input_device_index=DEVINDEX,
+                        rate=RATE,
+                        input=True,
+                        frames_per_buffer=CHUNK,
+                        stream_callback=callback)
+
+        # start the stream
+        stream.start_stream()
+
+        sampwidth = self.p.get_sample_size(FORMAT)
+
+
+        print "* recording", CHANNELS, "ch,", dqlength * CHUNK / RATE, "secs audio buffer, Delay:", DELAY, "secs"
+        print "Output directory", os.getcwd() + "\\<contest...>"
+        if nopyhk:
+            print("Hotkey functionality is disabled")
+        else:
+            print "Hotkey: CTRL+ALT+" + HOTKEY
+        if (self.options.station_nr >= 0):
+            print "Recording only station", self.options.station_nr, "QSOs"
+        if (self.options.continuous):
+            print "Full contest recording enabled."
+        print("\t--------------------------------\n")
+
+
+        #start continious mp3 writer thread
+        if (self.options.continuous):
+            mp3 = threading.Thread(target=writer)
+            mp3.setDaemon(True)
+            mp3.start()
+
+
+        # listen on UDP port
+        # Receive UDP packets transmitted by a broadcasting service
+
+        s = socket(AF_INET, SOCK_DGRAM)
+        s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+        s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        try:
+                s.bind(('', MYPORT))
+        except:
+                print "Error connecting to the UDP stream."
+
+        seen = {}
+        while stream.is_active():
+            try:
+                udp_data = s.recv(2048)
+                check_sum = binascii.crc32(udp_data)
+                try:
+                    dom = parseString(udp_data)
+                except xml.parsers.expat.ExpatError, e:
+                    pass
+
+                if (udp_data == "qsorder_exit_loop_DEADBEEF"):
+                    print "Received magic Exit packet"
+                    break
+
+
+                if (self.options.debug):
+                    logging.debug('UDP Packet Received:')
+                    logging.debug(udp_data)
+
+                # skip packet if duplicate
+                if check_sum in seen:
+                    seen[check_sum] += 1
+                    if (self.options.debug):
+                        logging.debug('DUPE packet skipped')
+                else:
+                    seen[check_sum] = 1
+                    try:
+                        now = datetime.datetime.utcnow()
+
+                        # read UDP fields
+                        dom = parseString(udp_data)
+                        call = dom.getElementsByTagName("call")[0].firstChild.nodeValue
+                        mycall = dom.getElementsByTagName("mycall")[0].firstChild.nodeValue
+                        mode = dom.getElementsByTagName("mode")[0].firstChild.nodeValue
+                        freq = dom.getElementsByTagName("band")[0].firstChild.nodeValue
+                        contest = dom.getElementsByTagName("contestname")[0].firstChild.nodeValue
+                        station = dom.getElementsByTagName("NetworkedCompNr")[0].firstChild.nodeValue
+                        qso_timestamp = dom.getElementsByTagName("timestamp")[0].firstChild.nodeValue
+                        radio_nr = dom.getElementsByTagName("radionr")[0].firstChild.nodeValue
+
+                        # convert qso_timestamp to datetime object
+                        timestamp = dateutil.parser.parse(qso_timestamp)
+
+                        # verify that month matches, if not, give DD-MM-YY format precendense
+                        if (timestamp.strftime("%m") != now.strftime("%m")):
+                            timestamp = dateutil.parser.parse(qso_timestamp, dayfirst=True)
+
+                        # skip packet if not matching network station number specified in the command line
+                        if (self.options.station_nr >= 0):
+                            if (self.options.station_nr != station):
+                                print "QSO:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring from stn", station
+                                continue
+
+                        # skip packet if QSO was more than DELAY seconds ago
+                        t_delta = (now - timestamp).total_seconds()
+                        if (t_delta > DELAY):
+                            print "---:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring ",\
+                                t_delta, "sec old QSO. Check clock settings?"
+                            continue
+                        elif (t_delta < -DELAY):
+                            print "---:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring ",\
+                                -t_delta, "sec QSO in the 'future'. Check clock settings?"
+                            continue
+
+
+                        calls = call + "_de_" + mycall
+
+                        t = threading.Timer(DELAY, dump_audio, [calls, contest, mode, freq, timestamp, radio_nr, sampwidth])
+                        print "QSO:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq
+                        t.start()
+                    except:
+                        if (self.options.debug):
+                            logging.debug('Could not parse previous packet')
+                            logging.debug(sys.exc_info())
+
+                        pass  # ignore, probably some other udp packet
+
+            except (KeyboardInterrupt):
+                print "73! K3IT"
+                stream.stop_stream()
+                stream.close()
+                self.p.terminate()
+                exit(0)
+
+            stream.close()
+            self.p.terminate()
 
 
 if __name__ == '__main__':    
-    main()
+    
+    qsorder = qsorder()

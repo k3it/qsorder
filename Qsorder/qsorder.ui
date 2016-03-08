@@ -71,19 +71,6 @@ K3IT
       <bool>false</bool>
      </property>
     </widget>
-    <widget class="QPushButton" name="quitButton">
-     <property name="geometry">
-      <rect>
-       <x>570</x>
-       <y>300</y>
-       <width>75</width>
-       <height>23</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>QUIT</string>
-     </property>
-    </widget>
    </widget>
    <widget class="QWidget" name="config_tab">
     <attribute name="title">
@@ -174,7 +161,7 @@ K3IT
      <property name="geometry">
       <rect>
        <x>360</x>
-       <y>250</y>
+       <y>210</y>
        <width>101</width>
        <height>41</height>
       </rect>
@@ -186,8 +173,8 @@ K3IT
     <widget class="QPushButton" name="applyButton">
      <property name="geometry">
       <rect>
-       <x>490</x>
-       <y>250</y>
+       <x>470</x>
+       <y>210</y>
        <width>101</width>
        <height>41</height>
       </rect>
@@ -222,8 +209,8 @@ K3IT
     <widget class="QCommandLinkButton" name="commandLinkButton">
      <property name="geometry">
       <rect>
-       <x>410</x>
-       <y>160</y>
+       <x>400</x>
+       <y>150</y>
        <width>172</width>
        <height>41</height>
       </rect>
@@ -249,6 +236,19 @@ K3IT
      </property>
      <property name="scaledContents">
       <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="quitButton">
+     <property name="geometry">
+      <rect>
+       <x>540</x>
+       <y>280</y>
+       <width>75</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>QUIT</string>
      </property>
     </widget>
     <widget class="QWidget" name="">
