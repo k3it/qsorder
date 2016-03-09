@@ -130,161 +130,6 @@ class qsorder(object):
     def __init__(self,argslist=None):
         self._parse_args(argslist)
 
-    
-    def dump_audio(call, contest, mode, freq, qso_time, radio_nr, sampwidth):
-        # create the wave file
-        BASENAME = call + "_" + contest + "_" + mode
-        BASENAME = BASENAME.replace('/', '-')
-        w = wave_file(RATE, freq, BASENAME, qso_time, contest, mode, sampwidth)
-        __data = (b''.join(frames))
-        bytes_written = w.write(__data)
-        w.close_wave()
-
-        # try to convert to mp3
-        lame_path = os.path.dirname(os.path.realpath(__file__))
-        lame_path += "\\lame.exe"
-
-        if not os.path.isfile(lame_path):
-            #try to use one in the system path
-            lame_path = 'lame'
-
-
-        if (self.options.so2r and radio_nr == "1"):
-            command = [lame_path]
-            arguments = ["-h", "-m", "m", "--scale-l", "2", "--scale-r", "0", w.wavfile]
-            command.extend(arguments)
-        elif (self.options.so2r and radio_nr == "2"):
-            command = [lame_path]
-            arguments = ["-h", "-m", "m", "--scale-l", "0", "--scale-r", "2", w.wavfile]
-            command.extend(arguments)
-        else:
-            command = [lame_path]
-            arguments = ["-h", w.wavfile]
-            command.extend(arguments)
-
-
-        try:
-            if (self.options.debug):
-                logging.debug(command)
-
-            output = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE).communicate()[0]
-            gain = re.search('\S*Replay.+', output)
-            print "WAV:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), BASENAME[:20] + ".." + str(freq) + "Mhz.mp3", \
-                gain.group(0)
-            os.remove(w.wavfile)
-        except:
-            print "could not convert wav to mp3", w.wavfile
-
-    def manual_dump():
-        print "QSO:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), "HOTKEY pressed"
-        dump_audio("HOTKEY", "AUDIO", "RF", 0, datetime.datetime.utcnow(), 73)
-
-    def hotkey():
-        if nopyhk:
-            return
-        # create pyhk class instance
-        hot = pyhk.pyhk()
-
-        # add hotkey
-        hot.addHotkey(['Ctrl', 'Alt', HOTKEY], manual_dump, isThread=False)
-        hot.start()
-
-    def get_free_space_mb(folder):
-        """ Return folder/drive free space (in bytes)
-        """
-        if platform.system() == 'Windows':
-            free_bytes = ctypes.c_ulonglong(0)
-            ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(folder), None, None, ctypes.pointer(free_bytes))
-            return free_bytes.value/1024/1024
-        else:
-            st = os.statvfs(folder)
-            return st.f_bavail * st.f_frsize/1024/1024
-
-    def start_new_lame_stream():
-        lame_path = os.path.dirname(os.path.realpath(__file__))
-        lame_path += "\\lame.exe"
-
-        if not os.path.isfile(lame_path):
-            #try to use one in the system path
-            lame_path = 'lame'
-
-
-
-        # print "CTL: Starting new mp3 file", datetime.datetime.utcnow.strftime("%m-%d %H:%M:%S")
-        now = datetime.datetime.utcnow()
-        contest_dir = "AUDIO_" + str(now.year)
-        if not os.path.exists(contest_dir):
-            os.makedirs(contest_dir)
-
-        BASENAME = "CONTEST_AUDIO"
-        filename = contest_dir + "/" + BASENAME + "_"
-        filename += str(now.year)
-        filename += str(now.month).zfill(2)
-        filename += str(now.day).zfill(2)
-        filename += "_"
-        filename += str(now.hour).zfill(2)
-        filename += str(now.minute).zfill(2)
-        filename += "Z"
-        # filename += str(int(LO/1000))
-        filename += ".mp3"
-        command = [lame_path]
-        # arguments = ["-r", "-s", str(RATE), "-v", "--disptime 60", "-h", "--tt", BASENAME, "--ty", str(now.year), "--tg Ham Radio", "-", filename]
-        # arguments = ["-r", "-s", str(RATE), "-v", "-h", "--quiet", "--tt", BASENAME, "--ty", str(now.year), "-", filename]
-        arguments = ["-r", "-s", str(RATE), "-h", "--flush", "--quiet", "--tt", "Qsorder Contest Recording", "--ty", str(now.year), "--tc", os.path.basename(filename), "-", filename]
-        command.extend(arguments)
-        try:
-            mp3handle = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
-        except:
-            print "CTL error starting mp3 recording.  Exiting.."
-            exit(-1)
-
-        print "CTL:", str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + "Z started new .mp3 file: ", filename
-        print "CTL: Disk free space:", get_free_space_mb(contest_dir)/1024, "GB"
-        if get_free_space_mb(contest_dir) < 100:
-            print "CTL: WARNING: Low Disk space"
-        return mp3handle,filename
-        #write continious mp3 stream to disk in a separate worker thread
-
-    def writer():
-        # start new lame recording
-        now = datetime.datetime.utcnow()
-        utchr = now.hour
-        utcmin = now.minute
-        (lame, filename) = start_new_lame_stream()
-        start = time.clock() * 1000
-        bytes_written = 0
-        avg_rate = 0
-        
-        while True:
-            #open a new file on top of the hour
-            now = datetime.datetime.utcnow()
-            if utchr != now.hour:
-                # sleep some to flush out buffers
-                time.sleep(5)
-                lame.terminate()
-                utchr = now.hour
-                (lame, filename) = start_new_lame_stream()
-            if (len(replay_frames) > 0):
-                data = replay_frames.popleft()
-                lame.stdin.write(data)
-                bytes_written += sys.getsizeof(data)
-            else:
-                end = time.clock()*1000
-                if (end - start > 60000):
-                    elapsed = end - start
-                    sampling_rate = bytes_written/4/elapsed
-                    print bytes_written, "bytes in ", elapsed, "ms. Sampling rate:", sampling_rate, "kHz"
-                    start = end
-                    bytes_written=0
-                time.sleep(1)
-            if (utcmin != now.minute and now.minute % 10 == 0 and now.minute != 0):
-                print "CTL:", str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + "Z ...recording:", filename
-                contest_dir = "AUDIO_" + str(now.year)
-                if get_free_space_mb(contest_dir) < 100:
-                    print "CTL: WARNING: Low Disk space"
-                utcmin = now.minute
-
-
     def _parse_args(self, argslist):
         usage = "usage: %prog [OPTION]..."
         parser = argparse.ArgumentParser()
@@ -356,6 +201,7 @@ class qsorder(object):
         sys.exit(app.exec_())
 
     def _apply_settings(self):
+        threads = []
         self.options.buffer_length = self.qsorder.ui.buffer.value()
         self.options.delay = self.qsorder.ui.delay.value()
         self.options.port = self.qsorder.ui.port.value()
@@ -364,10 +210,15 @@ class qsorder(object):
         self.options.debug = self.qsorder.ui.debug.isChecked()
         self.options.continuous = self.qsorder.ui.continuous.isChecked()
         self.options.so2r = self.qsorder.ui.so2r.isChecked()
-        print "updated parameters"
 
         self._stopQsorder()
-        self.recording_loop()
+
+        self.thread = recording_loop(self.options)
+        # self.thread.setDaemon(True)
+        # self.connect(self.get_thread, SIGNAL("finished()"), self.done)
+        self.thread.start()
+        threads.append(self.thread)
+
 
 
     def _stopQsorder(self):
@@ -381,7 +232,173 @@ class qsorder(object):
 
 
 
-    def recording_loop(self):
+class recording_loop(QThread):
+    '''
+    main recording class
+    '''
+
+    def __init__(self, options):
+        super(recording_loop, self).__init__()
+        self.options = options
+        self.p = pyaudio.PyAudio()
+
+    def __del__(self):
+        self.wait()
+        
+    def _dump_audio(self, call, contest, mode, freq, qso_time, radio_nr, sampwidth):
+        # create the wave file
+        BASENAME = call + "_" + contest + "_" + mode
+        BASENAME = BASENAME.replace('/', '-')
+        w = wave_file(RATE, freq, BASENAME, qso_time, contest, mode, sampwidth)
+        __data = (b''.join(frames))
+        bytes_written = w.write(__data)
+        w.close_wave()
+
+        # try to convert to mp3
+        lame_path = os.path.dirname(os.path.realpath(__file__))
+        lame_path += "\\lame.exe"
+
+        if not os.path.isfile(lame_path):
+            #try to use one in the system path
+            lame_path = 'lame'
+
+
+        if (self.options.so2r and radio_nr == "1"):
+            command = [lame_path]
+            arguments = ["-h", "-m", "m", "--scale-l", "2", "--scale-r", "0", w.wavfile]
+            command.extend(arguments)
+        elif (self.options.so2r and radio_nr == "2"):
+            command = [lame_path]
+            arguments = ["-h", "-m", "m", "--scale-l", "0", "--scale-r", "2", w.wavfile]
+            command.extend(arguments)
+        else:
+            command = [lame_path]
+            arguments = ["-h", w.wavfile]
+            command.extend(arguments)
+
+
+        try:
+            if (self.options.debug):
+                logging.debug(command)
+
+            output = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE).communicate()[0]
+            gain = re.search('\S*Replay.+', output)
+            print "WAV:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), BASENAME[:20] + ".." + str(freq) + "Mhz.mp3", \
+                gain.group(0)
+            os.remove(w.wavfile)
+        except:
+            print "could not convert wav to mp3", w.wavfile
+
+    def _manual_dump(self):
+        print "QSO:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), "HOTKEY pressed"
+        self._dump_audio("HOTKEY", "AUDIO", "RF", 0, datetime.datetime.utcnow(), 73)
+
+    def _hotkey(self):
+        if nopyhk:
+            return
+        # create pyhk class instance
+        hot = pyhk.pyhk()
+
+        # add hotkey
+        hot.addHotkey(['Ctrl', 'Alt', HOTKEY], self._manual_dump, isThread=False)
+        hot.start()
+
+    def _get_free_space_mb(self,folder):
+        """ Return folder/drive free space (in bytes)
+        """
+        if platform.system() == 'Windows':
+            free_bytes = ctypes.c_ulonglong(0)
+            ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(folder), None, None, ctypes.pointer(free_bytes))
+            return free_bytes.value/1024/1024
+        else:
+            st = os.statvfs(folder)
+            return st.f_bavail * st.f_frsize/1024/1024
+
+    def _start_new_lame_stream(self):
+        lame_path = os.path.dirname(os.path.realpath(__file__))
+        lame_path += "\\lame.exe"
+
+        if not os.path.isfile(lame_path):
+            #try to use one in the system path
+            lame_path = 'lame'
+
+
+
+        # print "CTL: Starting new mp3 file", datetime.datetime.utcnow.strftime("%m-%d %H:%M:%S")
+        now = datetime.datetime.utcnow()
+        contest_dir = "AUDIO_" + str(now.year)
+        if not os.path.exists(contest_dir):
+            os.makedirs(contest_dir)
+
+        BASENAME = "CONTEST_AUDIO"
+        filename = contest_dir + "/" + BASENAME + "_"
+        filename += str(now.year)
+        filename += str(now.month).zfill(2)
+        filename += str(now.day).zfill(2)
+        filename += "_"
+        filename += str(now.hour).zfill(2)
+        filename += str(now.minute).zfill(2)
+        filename += "Z"
+        # filename += str(int(LO/1000))
+        filename += ".mp3"
+        command = [lame_path]
+        # arguments = ["-r", "-s", str(RATE), "-v", "--disptime 60", "-h", "--tt", BASENAME, "--ty", str(now.year), "--tg Ham Radio", "-", filename]
+        # arguments = ["-r", "-s", str(RATE), "-v", "-h", "--quiet", "--tt", BASENAME, "--ty", str(now.year), "-", filename]
+        arguments = ["-r", "-s", str(RATE), "-h", "--flush", "--quiet", "--tt", "Qsorder Contest Recording", "--ty", str(now.year), "--tc", os.path.basename(filename), "-", filename]
+        command.extend(arguments)
+        try:
+            mp3handle = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+        except:
+            print "CTL error starting mp3 recording.  Exiting.."
+            exit(-1)
+
+        print "CTL:", str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + "Z started new .mp3 file: ", filename
+        print "CTL: Disk free space:", self._get_free_space_mb(contest_dir)/1024, "GB"
+        if self._get_free_space_mb(contest_dir) < 100:
+            print "CTL: WARNING: Low Disk space"
+        return mp3handle,filename
+        #write continious mp3 stream to disk in a separate worker thread
+
+    def _writer(self):
+        # start new lame recording
+        now = datetime.datetime.utcnow()
+        utchr = now.hour
+        utcmin = now.minute
+        (lame, filename) = self._start_new_lame_stream()
+        start = time.clock() * 1000
+        bytes_written = 0
+        avg_rate = 0
+        
+        while True:
+            #open a new file on top of the hour
+            now = datetime.datetime.utcnow()
+            if utchr != now.hour:
+                # sleep some to flush out buffers
+                time.sleep(5)
+                lame.terminate()
+                utchr = now.hour
+                (lame, filename) = self._start_new_lame_stream()
+            if (len(replay_frames) > 0):
+                data = replay_frames.popleft()
+                lame.stdin.write(data)
+                bytes_written += sys.getsizeof(data)
+            else:
+                end = time.clock()*1000
+                if (end - start > 60000):
+                    elapsed = end - start
+                    sampling_rate = bytes_written/4/elapsed
+                    print bytes_written, "bytes in ", elapsed, "ms. Sampling rate:", sampling_rate, "kHz"
+                    start = end
+                    bytes_written=0
+                time.sleep(1)
+            if (utcmin != now.minute and now.minute % 10 == 0 and now.minute != 0):
+                print "CTL:", str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + "Z ...recording:", filename
+                contest_dir = "AUDIO_" + str(now.year)
+                if self._get_free_space_mb(contest_dir) < 100:
+                    print "CTL: WARNING: Low Disk space"
+                utcmin = now.minute
+
+    def run(self):
         dqlength = int(self.options.buffer_length * RATE / CHUNK) + 1
         DELAY = self.options.delay
         MYPORT = self.options.port
@@ -406,7 +423,7 @@ class qsorder(object):
 
         # start hotkey monitoring thread
         if not nopyhk:
-            t = threading.Thread(target=hotkey)
+            t = threading.Thread(target=self._hotkey)
             t.setDaemon(True)
             t.start()
 
@@ -483,7 +500,7 @@ class qsorder(object):
 
         #start continious mp3 writer thread
         if (self.options.continuous):
-            mp3 = threading.Thread(target=writer)
+            mp3 = threading.Thread(target=self._writer)
             mp3.setDaemon(True)
             mp3.start()
 
@@ -566,7 +583,7 @@ class qsorder(object):
 
                         calls = call + "_de_" + mycall
 
-                        t = threading.Timer(DELAY, dump_audio, [calls, contest, mode, freq, timestamp, radio_nr, sampwidth])
+                        t = threading.Timer(DELAY, self._dump_audio, [calls, contest, mode, freq, timestamp, radio_nr, sampwidth])
                         print "QSO:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq
                         t.start()
                     except:
