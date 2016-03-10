@@ -61,16 +61,15 @@ from qgui import *
 
 
 
-CHUNK = 1024
-FORMAT = pyaudio.paInt16
-CHANNELS = 2
-# RATE = 8000
-RATE = 11025
-BASENAME = "QSO"
-LO = 14000
-dqlength = 360  # number of chunks to store in the buffer
-DELAY = 20.0
-MYPORT = 12060
+CHUNK      = 1024
+FORMAT     = pyaudio.paInt16
+CHANNELS   = 2
+RATE       = 11025
+BASENAME   = "QSO"
+LO         = 14000
+dqlength   = 360  # number of chunks to store in the buffer
+DELAY      = 20.0
+MYPORT     = 12060
 DEBUG_FILE = "qsorder-debug-log.txt"
 
 
@@ -90,20 +89,19 @@ class wave_file:
                 self.wavfile += str(now.minute).zfill(2)
                 self.wavfile += str(now.second).zfill(2)
                 self.wavfile += "Z_"
-                # self.wavfile += str(int(LO/1000))
                 self.wavfile += str(LO)
                 self.wavfile += "MHz.wav"
-
+                
                 # contest directory
                 self.contest_dir = contest_dir
                 self.contest_dir += "_" + str(now.year)
-
+                
                 # fix slash in the file/directory name
-                self.wavfile = self.wavfile.replace('/', '-')
+                self.wavfile     = self.wavfile.replace('/', '-')
                 self.contest_dir = self.contest_dir.replace('/', '-')
-
-                self.wavfile = self.contest_dir + "/" + self.wavfile
-
+                
+                self.wavfile     = self.contest_dir + "/" + self.wavfile
+                
                 # get ready to write wave file
                 try:
                     if not os.path.exists(self.contest_dir):
@@ -197,11 +195,14 @@ class qsorder(object):
         self.qsorder.ui.inputs.addItems(inputs.values())
 
         self.qsorder.ui.applyButton.clicked.connect(self._apply_settings)
+        
+        self.qsorder.ui.quitButton.clicked.connect(self._stopQsorder)
+
 
         sys.exit(app.exec_())
 
     def _apply_settings(self):
-        threads = []
+        self.threads = []
         self.options.buffer_length = self.qsorder.ui.buffer.value()
         self.options.delay = self.qsorder.ui.delay.value()
         self.options.port = self.qsorder.ui.port.value()
@@ -211,13 +212,24 @@ class qsorder(object):
         self.options.continuous = self.qsorder.ui.continuous.isChecked()
         self.options.so2r = self.qsorder.ui.so2r.isChecked()
 
-        self._stopQsorder()
+
+        try:
+            self._stopQsorder()
+        except:
+            pass
+        # try:
+        #      self.thread.quit()
+        #      self.thread.wait()
+        # except:
+        #      pass
 
         self.thread = recording_loop(self.options)
+        # self.thread = test_thread(self.options)
         # self.thread.setDaemon(True)
-        # self.connect(self.get_thread, SIGNAL("finished()"), self.done)
+        # self.connect(self.thread, SIGNAL("finished()"), self.done)
+        # self.connect(self.thread, SIGNAL("terminated()"), self.done)
         self.thread.start()
-        threads.append(self.thread)
+        # self.threads.append(self.thread)
 
 
 
@@ -229,7 +241,31 @@ class qsorder(object):
         udp_packet = "qsorder_exit_loop_DEADBEEF"
         s.sendto(udp_packet, ('<broadcast>', MYPORT))
         s.close()
+        if not self.thread.wait(2000):
+            print "Tired of waiting, killing thread"
+            self.thread.terminate()
+            self.thread.wait(500)
 
+class test_thread(QThread):
+    def __init__(self,options):
+        super(test_thread, self).__init__()
+        self.options = options
+        self._isRunning = True
+
+    # def __del__(self):
+    #     self._isRunning = False
+    #     # self.wait()
+
+    def run(self):
+        while self._isRunning:
+            print "thread running"
+            time.sleep(1)
+        print "Quiting thread.."
+
+    def quit(self):
+        self._isRunning = False
+
+        
 
 
 class recording_loop(QThread):
@@ -241,10 +277,11 @@ class recording_loop(QThread):
         super(recording_loop, self).__init__()
         self.options = options
         self.p = pyaudio.PyAudio()
+        self._isRunning = True
 
-    def __del__(self):
-        self.wait()
-        
+    def quit(self):
+        self._isRunning = False
+
     def _dump_audio(self, call, contest, mode, freq, qso_time, radio_nr, sampwidth):
         # create the wave file
         BASENAME = call + "_" + contest + "_" + mode
@@ -275,7 +312,6 @@ class recording_loop(QThread):
             command = [lame_path]
             arguments = ["-h", w.wavfile]
             command.extend(arguments)
-
 
         try:
             if (self.options.debug):
@@ -401,6 +437,7 @@ class recording_loop(QThread):
     def run(self):
         dqlength = int(self.options.buffer_length * RATE / CHUNK) + 1
         DELAY = self.options.delay
+        global MYPORT
         MYPORT = self.options.port
 
         if (self.options.path):
@@ -527,7 +564,7 @@ class recording_loop(QThread):
                     pass
 
                 if (udp_data == "qsorder_exit_loop_DEADBEEF"):
-                    print "Received magic Exit packet"
+                    logging.debug("Received Exit magic packet")
                     break
 
 
@@ -600,9 +637,9 @@ class recording_loop(QThread):
                 self.p.terminate()
                 exit(0)
 
-            stream.close()
-            self.p.terminate()
-
+        stream.stop_stream()
+        stream.close()
+        self.p.terminate()
 
 if __name__ == '__main__':    
     
