@@ -7,7 +7,7 @@ import time
 
 import cProfile, pstats
 
-from Qsorder import qsorder
+from pyQsorder import qsorder
 
 import mock
 from socket import *

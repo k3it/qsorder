@@ -202,36 +202,28 @@ class qsorder(object):
         sys.exit(app.exec_())
 
     def _apply_settings(self):
-        self.threads = []
         self.options.buffer_length = self.qsorder.ui.buffer.value()
-        self.options.delay = self.qsorder.ui.delay.value()
-        self.options.port = self.qsorder.ui.port.value()
-        self.options.path = self.qsorder.ui.path.text()
-        self.options.hot_key = self.qsorder.ui.hotkey.text()
-        self.options.debug = self.qsorder.ui.debug.isChecked()
-        self.options.continuous = self.qsorder.ui.continuous.isChecked()
-        self.options.so2r = self.qsorder.ui.so2r.isChecked()
+        self.options.delay         = self.qsorder.ui.delay.value()
+        self.options.port          = self.qsorder.ui.port.value()
+        self.options.path          = self.qsorder.ui.path.text()
+        self.options.hot_key       = self.qsorder.ui.hotkey.text()
+        self.options.debug         = self.qsorder.ui.debug.isChecked()
+        self.options.continuous    = self.qsorder.ui.continuous.isChecked()
+        self.options.so2r          = self.qsorder.ui.so2r.isChecked()
 
 
         try:
             self._stopQsorder()
         except:
             pass
-        # try:
-        #      self.thread.quit()
-        #      self.thread.wait()
-        # except:
-        #      pass
 
         self.thread = recording_loop(self.options)
         # self.thread = test_thread(self.options)
-        # self.thread.setDaemon(True)
-        # self.connect(self.thread, SIGNAL("finished()"), self.done)
-        # self.connect(self.thread, SIGNAL("terminated()"), self.done)
+        self.thread.update_console.connect(self._update_text)
         self.thread.start()
-        # self.threads.append(self.thread)
 
-
+    def _update_text(self,txt):
+        self.qsorder.ui.console.appendPlainText(txt)
 
     def _stopQsorder(self):
         # MYPORT = self.options.port
@@ -247,31 +239,30 @@ class qsorder(object):
             self.thread.wait(500)
 
 class test_thread(QThread):
+    
+    update_console = Signal(str)
+
     def __init__(self,options):
         super(test_thread, self).__init__()
         self.options = options
         self._isRunning = True
 
-    # def __del__(self):
-    #     self._isRunning = False
-    #     # self.wait()
-
     def run(self):
         while self._isRunning:
-            print "thread running"
+            self.update_console.emit("thread running")
             time.sleep(1)
         print "Quiting thread.."
 
     def quit(self):
         self._isRunning = False
-
-        
+       
 
 
 class recording_loop(QThread):
     '''
     main recording class
     '''
+    update_console = Signal(str)
 
     def __init__(self, options):
         super(recording_loop, self).__init__()
@@ -388,7 +379,7 @@ class recording_loop(QThread):
             print "CTL error starting mp3 recording.  Exiting.."
             exit(-1)
 
-        print "CTL:", str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + "Z started new .mp3 file: ", filename
+        self.update_console.emit("CTL: " + str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + "Z started new .mp3 file: " + filename)
         print "CTL: Disk free space:", self._get_free_space_mb(contest_dir)/1024, "GB"
         if self._get_free_space_mb(contest_dir) < 100:
             print "CTL: WARNING: Low Disk space"
@@ -465,28 +456,29 @@ class recording_loop(QThread):
             t.start()
 
 
-        print("--------------------------------------")
-        print "v2.8 QSO Recorder for N1MM, 2015 K3IT\n"
-        print("--------------------------------------")
+        self.update_console.emit("--------------------------------------")
+        self.update_console.emit("v2.8 QSO Recorder for N1MM, 2015 K3IT")
+        self.update_console.emit("--------------------------------------")
 
 
         if (self.options.device_index):
             try:
                 def_index = self.p.get_device_info_by_index(self.options.device_index)
-                print "Input Device :", def_index['name']
+                self.update_console.emit("Input Device :" + def_index['name'])
                 DEVINDEX = self.options.device_index
             except IOError as e:
-                print("Invalid Input device: %s" % e[0])
+                self.update_console.emit("Invalid Input device: %s" % e[0])
                 self.p.terminate()
                 os._exit(-1)
 
         else:
             try:
                 def_index = self.p.get_default_input_device_info()
-                print "Input Device :", def_index['index'], def_index['name']
+                msg = "Input Device: " +  str(def_index['index']) + " " + str(def_index['name'])
+                self.update_console.emit(msg)
                 DEVINDEX = def_index['index']
             except IOError as e:
-                print("No Input devices: %s" % e[0])
+                self.update_console.emit("No Input devices: %s" % e[0])
                 self.p.terminate()
                 os._exit(-1)
 
@@ -563,8 +555,8 @@ class recording_loop(QThread):
                 except xml.parsers.expat.ExpatError, e:
                     pass
 
-                if (udp_data == "qsorder_exit_loop_DEADBEEF"):
-                    logging.debug("Received Exit magic packet")
+                if (udp_data == "qsorder_exit_loop_DEADBEEF" or self._isRunning == False):
+                    logging.debug("Received Exit magic signal")
                     break
 
 
