@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>646</width>
-    <height>351</height>
+    <width>668</width>
+    <height>356</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -22,11 +22,14 @@
   <widget class="QTabWidget" name="tabWidget">
    <property name="geometry">
     <rect>
-     <x>-4</x>
+     <x>0</x>
      <y>0</y>
-     <width>651</width>
+     <width>731</width>
      <height>351</height>
     </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">background-color: rgb(243, 239, 222);</string>
    </property>
    <property name="currentIndex">
     <number>1</number>
@@ -41,7 +44,7 @@
        <x>0</x>
        <y>0</y>
        <width>651</width>
-       <height>291</height>
+       <height>321</height>
       </rect>
      </property>
      <property name="font">
@@ -160,7 +163,7 @@ K3IT
     <widget class="QPushButton" name="saveButton">
      <property name="geometry">
       <rect>
-       <x>360</x>
+       <x>400</x>
        <y>210</y>
        <width>101</width>
        <height>41</height>
@@ -173,7 +176,7 @@ K3IT
     <widget class="QPushButton" name="applyButton">
      <property name="geometry">
       <rect>
-       <x>470</x>
+       <x>510</x>
        <y>210</y>
        <width>101</width>
        <height>41</height>
@@ -232,7 +235,7 @@ K3IT
       <string/>
      </property>
      <property name="pixmap">
-      <pixmap>../../../../.designer/backup/qsorder.png</pixmap>
+      <pixmap>qsorder.png</pixmap>
      </property>
      <property name="scaledContents">
       <bool>true</bool>
@@ -241,7 +244,7 @@ K3IT
     <widget class="QPushButton" name="quitButton">
      <property name="geometry">
       <rect>
-       <x>470</x>
+       <x>510</x>
        <y>270</y>
        <width>101</width>
        <height>23</height>
@@ -249,22 +252,6 @@ K3IT
      </property>
      <property name="text">
       <string>Exit</string>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="quitButton_2">
-     <property name="geometry">
-      <rect>
-       <x>360</x>
-       <y>270</y>
-       <width>101</width>
-       <height>23</height>
-      </rect>
-     </property>
-     <property name="styleSheet">
-      <string notr="true">background-color: rgb(144, 220, 255);</string>
-     </property>
-     <property name="text">
-      <string>Donate</string>
      </property>
     </widget>
     <widget class="QWidget" name="layoutWidget">
@@ -298,7 +285,7 @@ K3IT
       <rect>
        <x>20</x>
        <y>50</y>
-       <width>123</width>
+       <width>125</width>
        <height>48</height>
       </rect>
      </property>
@@ -429,6 +416,8 @@ K3IT
    </widget>
   </widget>
  </widget>
- <resources/>
+ <resources>
+  <include location="bkg-img.qrc"/>
+ </resources>
  <connections/>
 </ui>

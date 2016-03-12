@@ -224,6 +224,9 @@ class qsorder(object):
 
     def _update_text(self,txt):
         self.qsorder.ui.console.appendPlainText(txt)
+        # self.qsorder.ui.console.verticalScrollBar().setValue(self.qsorder.ui.console.verticalScrollBar().maximum())
+        self.qsorder.ui.console.moveCursor(QTextCursor.End)
+        self.qsorder.ui.console.ensureCursorVisible()
 
     def _stopQsorder(self):
         # MYPORT = self.options.port
@@ -310,14 +313,16 @@ class recording_loop(QThread):
 
             output = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE).communicate()[0]
             gain = re.search('\S*Replay.+', output)
-            print "WAV:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), BASENAME[:20] + ".." + str(freq) + "Mhz.mp3", \
-                gain.group(0)
+
+            msg =  "WAV: " + datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S") + " " + BASENAME[:20] \
+                + ".." + str(freq) + "Mhz.mp3 " + gain.group(0)
+            self.update_console.emit(msg.rstrip())    
             os.remove(w.wavfile)
         except:
-            print "could not convert wav to mp3", w.wavfile
+            self.update_console.emit("could not convert wav to mp3 " + w.wavfile)
 
     def _manual_dump(self):
-        print "QSO:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), "HOTKEY pressed"
+        self.update_console.emit("QSO: " + datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S") + " HOTKEY pressed")
         self._dump_audio("HOTKEY", "AUDIO", "RF", 0, datetime.datetime.utcnow(), 73)
 
     def _hotkey(self):
@@ -349,9 +354,6 @@ class recording_loop(QThread):
             #try to use one in the system path
             lame_path = 'lame'
 
-
-
-        # print "CTL: Starting new mp3 file", datetime.datetime.utcnow.strftime("%m-%d %H:%M:%S")
         now = datetime.datetime.utcnow()
         contest_dir = "AUDIO_" + str(now.year)
         if not os.path.exists(contest_dir):
@@ -376,13 +378,13 @@ class recording_loop(QThread):
         try:
             mp3handle = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
         except:
-            print "CTL error starting mp3 recording.  Exiting.."
+            self.update_console.emit("CTL error starting mp3 recording.  Exiting..")
             exit(-1)
 
         self.update_console.emit("CTL: " + str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + "Z started new .mp3 file: " + filename)
-        print "CTL: Disk free space:", self._get_free_space_mb(contest_dir)/1024, "GB"
+        self.update_console.emit("CTL: Disk free space: " +  str(self._get_free_space_mb(contest_dir)/1024) +  "GB")
         if self._get_free_space_mb(contest_dir) < 100:
-            print "CTL: WARNING: Low Disk space"
+            self.update_console.emit("CTL: WARNING: Low Disk space")
         return mp3handle,filename
         #write continious mp3 stream to disk in a separate worker thread
 
@@ -414,15 +416,17 @@ class recording_loop(QThread):
                 if (end - start > 60000):
                     elapsed = end - start
                     sampling_rate = bytes_written/4/elapsed
-                    print bytes_written, "bytes in ", elapsed, "ms. Sampling rate:", sampling_rate, "kHz"
+                    # self.update_console.emit(str(bytes_written) + " bytes in " + str(elapsed) + "ms. Sampling rate: " 
+                    #     +  str(sampling_rate) + "kHz")
                     start = end
                     bytes_written=0
                 time.sleep(1)
             if (utcmin != now.minute and now.minute % 10 == 0 and now.minute != 0):
-                print "CTL:", str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + "Z ...recording:", filename
+                self.update_console.emit("CTL: " + str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) 
+                    + "Z ...recording: " + filename)
                 contest_dir = "AUDIO_" + str(now.year)
                 if self._get_free_space_mb(contest_dir) < 100:
-                    print "CTL: WARNING: Low Disk space"
+                    self.update_console.emit("CTL: WARNING: Low Disk space")
                 utcmin = now.minute
 
     def run(self):
@@ -438,7 +442,7 @@ class recording_loop(QThread):
             global HOTKEY
             HOTKEY = self.options.hot_key.upper()
         else:
-            print "Hotkey should be a single character"
+            self.update_console.emit("Hotkey should be a single character")
             parser.print_help()
             exit(-1)
 
@@ -457,7 +461,7 @@ class recording_loop(QThread):
 
 
         self.update_console.emit("--------------------------------------")
-        self.update_console.emit("v2.8 QSO Recorder for N1MM, 2015 K3IT")
+        self.update_console.emit("v3.0 QSO Recorder for N1MM, 2016 K3IT")
         self.update_console.emit("--------------------------------------")
 
 
@@ -490,7 +494,7 @@ class recording_loop(QThread):
         global replay_frames
         replay_frames = deque('',dqlength)
 
-        print "Listening on UDP port", MYPORT
+        self.update_console.emit("Listening on UDP port " + str(MYPORT))
 
         # define callback
         def callback(in_data, frame_count, time_info, status):
@@ -514,17 +518,18 @@ class recording_loop(QThread):
         sampwidth = self.p.get_sample_size(FORMAT)
 
 
-        print "* recording", CHANNELS, "ch,", dqlength * CHUNK / RATE, "secs audio buffer, Delay:", DELAY, "secs"
-        print "Output directory", os.getcwd() + "\\<contest...>"
+        self.update_console.emit("* recording " + str(CHANNELS) + "ch, " 
+            + str(dqlength * CHUNK / RATE) + " secs audio buffer, Delay:" + str(DELAY) + " secs")
+        self.update_console.emit("Output directory: " + os.getcwd() + "\\<contest...>")
         if nopyhk:
-            print("Hotkey functionality is disabled")
+            self.update_console.emit("Hotkey functionality is disabled")
         else:
-            print "Hotkey: CTRL+ALT+" + HOTKEY
-        if (self.options.station_nr >= 0):
-            print "Recording only station", self.options.station_nr, "QSOs"
+            self.update_console.emit("Hotkey: CTRL+ALT+" + HOTKEY)
+        if (self.options.station_nr > 0):
+            self.update_console.emit("Recording only station " + str(self.options.station_nr) + "QSOs")
         if (self.options.continuous):
-            print "Full contest recording enabled."
-        print("\t--------------------------------\n")
+            self.update_console.emit("Full contest recording enabled.")
+        self.update_console.emit("--------------------------------\n")
 
 
         #start continious mp3 writer thread
@@ -543,7 +548,7 @@ class recording_loop(QThread):
         try:
                 s.bind(('', MYPORT))
         except:
-                print "Error connecting to the UDP stream."
+                self.update_console.emit("Error connecting to the UDP stream.")
 
         seen = {}
         while stream.is_active():
@@ -593,27 +598,28 @@ class recording_loop(QThread):
                             timestamp = dateutil.parser.parse(qso_timestamp, dayfirst=True)
 
                         # skip packet if not matching network station number specified in the command line
-                        if (self.options.station_nr >= 0):
+                        if (self.options.station_nr > 0):
                             if (self.options.station_nr != station):
-                                print "QSO:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring from stn", station
+                                self.update_console.emit("QSO: " + timestamp.strftime("%m-%d %H:%M:%S") + call + " " 
+                                    + freq + " --- ignoring from stn" +  str(station))
                                 continue
 
                         # skip packet if QSO was more than DELAY seconds ago
                         t_delta = (now - timestamp).total_seconds()
                         if (t_delta > DELAY):
-                            print "---:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring ",\
-                                t_delta, "sec old QSO. Check clock settings?"
+                            self.update_console.emit("---: " +  timestamp.strftime("%m-%d %H:%M:%S") + call + " " 
+                                + freq + " --- ignoring " + str(t_delta) + " sec old QSO. Check clock settings?")
                             continue
                         elif (t_delta < -DELAY):
-                            print "---:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring ",\
-                                -t_delta, "sec QSO in the 'future'. Check clock settings?"
+                            self.update_console.emit("---: " + timestamp.strftime("%m-%d %H:%M:%S") + call + " " 
+                                + freq + " --- ignoring " + str(-t_delta) + "sec QSO in the 'future'. Check clock settings?")
                             continue
 
 
                         calls = call + "_de_" + mycall
 
                         t = threading.Timer(DELAY, self._dump_audio, [calls, contest, mode, freq, timestamp, radio_nr, sampwidth])
-                        print "QSO:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq
+                        self.update_console.emit("QSO: " + timestamp.strftime("%m-%d %H:%M:%S") + " " + call + " " + freq)
                         t.start()
                     except:
                         if (self.options.debug):
@@ -623,7 +629,7 @@ class recording_loop(QThread):
                         pass  # ignore, probably some other udp packet
 
             except (KeyboardInterrupt):
-                print "73! K3IT"
+                self.update_console.emit("73! K3IT")
                 stream.stop_stream()
                 stream.close()
                 self.p.terminate()
