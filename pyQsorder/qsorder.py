@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 ##################################################
 # qsorder - A contest QSO recorder
@@ -50,6 +51,8 @@ from socket import *
 from xml.dom.minidom import parseString
 import xml.parsers.expat
 
+# import audioop
+# from math import log10
 
 import logging
 
@@ -57,7 +60,10 @@ import logging
 from PySide.QtCore import * 
 from PySide.QtGui import *
 from PySide.QtUiTools import *
+from PySide import QtXml
+
 from qgui import *
+
 
 
 
@@ -163,7 +169,7 @@ class qsorder(object):
         self.p = pyaudio.PyAudio()
 
         max_devs = self.p.get_device_count()
-        inputs = {}
+        self.inputs = {}
         if (self.options.query_inputs):
             print "Detected", max_devs, "devices\n"       ################################
             print "Device index Description"
@@ -179,10 +185,11 @@ class qsorder(object):
                                              input_channels=devinfo['maxInputChannels'],
                                              input_format=pyaudio.paInt16):
                         if (self.options.query_inputs):
-                            print "\t", i, "\t", devinfo['name']
+                            print "\t", i, "\t", devinfo['name'].encode('unicode_escape')
                         else:
-                            inputs[i] = devinfo['name']
+                            self.inputs[devinfo['name']] = i
                 except ValueError:
+                    print("uknown chardets in sound input name.")
                     pass
         self.p.terminate()
         if (self.options.query_inputs):
@@ -192,7 +199,7 @@ class qsorder(object):
         
         app = QApplication(sys.argv)
         self.qsorder = qsorderApp(self.options)
-        self.qsorder.ui.inputs.addItems(inputs.values())
+        self.qsorder.ui.inputs.addItems(self.inputs.keys())
 
         self.qsorder.ui.applyButton.clicked.connect(self._apply_settings)
         
@@ -210,6 +217,7 @@ class qsorder(object):
         self.options.debug         = self.qsorder.ui.debug.isChecked()
         self.options.continuous    = self.qsorder.ui.continuous.isChecked()
         self.options.so2r          = self.qsorder.ui.so2r.isChecked()
+        self.options.device_index  = self.inputs[self.qsorder.ui.inputs.currentText()]
 
 
         try:
@@ -468,7 +476,7 @@ class recording_loop(QThread):
         if (self.options.device_index):
             try:
                 def_index = self.p.get_device_info_by_index(self.options.device_index)
-                self.update_console.emit("Input Device :" + def_index['name'])
+                self.update_console.emit("Input Device: " + def_index['name'])
                 DEVINDEX = self.options.device_index
             except IOError as e:
                 self.update_console.emit("Invalid Input device: %s" % e[0])
@@ -499,6 +507,9 @@ class recording_loop(QThread):
         # define callback
         def callback(in_data, frame_count, time_info, status):
             frames.append(in_data)
+            # rms = audioop.rms(in_data,2)
+            # decibel = 20 * log10(rms)
+            # print "Volume: ", decibel
             # add code for continous recording here
             replay_frames.append(in_data)
             return (None, pyaudio.paContinue)
