@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>630</width>
-    <height>356</height>
+    <width>675</width>
+    <height>353</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,20 +19,28 @@
   <property name="windowTitle">
    <string>QSORDER</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="bkg_img.qrc">
+    <normaloff>:/logo/qsorder.png</normaloff>:/logo/qsorder.png</iconset>
+  </property>
+  <property name="windowOpacity">
+   <double>0.970000000000000</double>
+  </property>
   <widget class="QTabWidget" name="tabWidget">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>621</width>
+     <width>671</width>
      <height>351</height>
     </rect>
    </property>
    <property name="styleSheet">
-    <string notr="true">background-color: rgb(243, 239, 222);</string>
+    <string notr="true">background-color: rgb(243, 239, 222);
+background-image: url(:/bkground/ricepaper_v3.png);</string>
    </property>
    <property name="currentIndex">
-    <number>1</number>
+    <number>0</number>
    </property>
    <widget class="QWidget" name="console_tab">
     <attribute name="title">
@@ -43,8 +51,8 @@
       <rect>
        <x>0</x>
        <y>0</y>
-       <width>651</width>
-       <height>321</height>
+       <width>661</width>
+       <height>231</height>
       </rect>
      </property>
      <property name="font">
@@ -63,9 +71,7 @@
       <bool>true</bool>
      </property>
      <property name="plainText">
-      <string>Qsorder qtGUI
-K3IT
-</string>
+      <string/>
      </property>
      <property name="backgroundVisible">
       <bool>false</bool>
@@ -74,6 +80,260 @@ K3IT
       <bool>false</bool>
      </property>
     </widget>
+    <widget class="QPushButton" name="quitButton_2">
+     <property name="geometry">
+      <rect>
+       <x>510</x>
+       <y>270</y>
+       <width>101</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Exit</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="manual_dump_btn">
+     <property name="geometry">
+      <rect>
+       <x>380</x>
+       <y>270</y>
+       <width>101</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Manual Dump</string>
+     </property>
+     <property name="shortcut">
+      <string>Ctrl+Alt+O</string>
+     </property>
+    </widget>
+    <widget class="Line" name="line">
+     <property name="geometry">
+      <rect>
+       <x>350</x>
+       <y>240</y>
+       <width>20</width>
+       <height>81</height>
+      </rect>
+     </property>
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+    </widget>
+    <widget class="Line" name="line_2">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>230</y>
+       <width>641</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+    <widget class="QWidget" name="">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>250</y>
+       <width>341</width>
+       <height>71</height>
+      </rect>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_2">
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_4">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Rec. Input:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLabel" name="label_5">
+        <property name="text">
+         <string>input input input input input in</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <widget class="QLabel" name="label_6">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Buffer, sec:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="3">
+       <widget class="QLabel" name="label_16">
+        <property name="text">
+         <string>555</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_21">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Qsorder status:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLabel" name="label_22">
+        <property name="text">
+         <string>Not Running</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2">
+       <widget class="QLabel" name="label_14">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Delay, sec:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="3">
+       <widget class="QLabel" name="label_17">
+        <property name="text">
+         <string>55</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_23">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Dropbox status:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLabel" name="label_24">
+        <property name="text">
+         <string>Not configured</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="2">
+       <widget class="QLabel" name="label_19">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Qs in buffer:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="3">
+       <widget class="QLabel" name="label_20">
+        <property name="text">
+         <string>55</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="label_15">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>UDP Port:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QLabel" name="label_18">
+        <property name="text">
+         <string>port</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="2">
+       <widget class="QLabel" name="label_25">
+        <property name="font">
+         <font>
+          <family>MS Shell Dlg 2</family>
+          <pointsize>8</pointsize>
+          <weight>75</weight>
+          <italic>false</italic>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true"/>
+        </property>
+        <property name="text">
+         <string>Qsorder ver:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="3">
+       <widget class="QLabel" name="label_26">
+        <property name="text">
+         <string>5.5</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+    <zorder>line_2</zorder>
+    <zorder>console</zorder>
+    <zorder>label_5</zorder>
+    <zorder>label_15</zorder>
+    <zorder>label_4</zorder>
+    <zorder>label_17</zorder>
+    <zorder>label_6</zorder>
+    <zorder>label_18</zorder>
+    <zorder>label_14</zorder>
+    <zorder>label_16</zorder>
+    <zorder>label_19</zorder>
+    <zorder>label_20</zorder>
+    <zorder>label_6</zorder>
+    <zorder>label_16</zorder>
+    <zorder>label_17</zorder>
+    <zorder>label_14</zorder>
+    <zorder>label_25</zorder>
+    <zorder>label_26</zorder>
+    <zorder>quitButton_2</zorder>
+    <zorder>manual_dump_btn</zorder>
+    <zorder>line</zorder>
    </widget>
    <widget class="QWidget" name="config_tab">
     <attribute name="title">
@@ -170,7 +430,7 @@ K3IT
       </rect>
      </property>
      <property name="text">
-      <string>Save Config</string>
+      <string>Save</string>
      </property>
     </widget>
     <widget class="QPushButton" name="applyButton">
@@ -183,7 +443,7 @@ K3IT
       </rect>
      </property>
      <property name="text">
-      <string>Apply</string>
+      <string>Apply Settings</string>
      </property>
     </widget>
     <widget class="QLabel" name="label_12">
@@ -235,7 +495,7 @@ K3IT
       <string/>
      </property>
      <property name="pixmap">
-      <pixmap>qsorder.png</pixmap>
+      <pixmap resource="bkg_img.qrc">:/logo/qsorder.png</pixmap>
      </property>
      <property name="scaledContents">
       <bool>true</bool>
@@ -333,32 +593,6 @@ K3IT
      <property name="geometry">
       <rect>
        <x>160</x>
-       <y>80</y>
-       <width>431</width>
-       <height>22</height>
-      </rect>
-     </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
-      <item>
-       <widget class="QLabel" name="label_9">
-        <property name="text">
-         <string>Path:</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLineEdit" name="path">
-        <property name="text">
-         <string>&lt;current directory&gt;</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-    <widget class="QWidget" name="layoutWidget">
-     <property name="geometry">
-      <rect>
-       <x>160</x>
        <y>50</y>
        <width>313</width>
        <height>22</height>
@@ -413,11 +647,89 @@ K3IT
       </item>
      </layout>
     </widget>
+    <widget class="QWidget" name="">
+     <property name="geometry">
+      <rect>
+       <x>160</x>
+       <y>80</y>
+       <width>451</width>
+       <height>24</height>
+      </rect>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_4">
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <item>
+         <widget class="QLabel" name="label_9">
+          <property name="text">
+           <string>Path:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="path">
+          <property name="text">
+           <string>&lt;current directory&gt;</string>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QToolButton" name="selectDir_btn">
+        <property name="text">
+         <string>...</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+    <zorder>quitButton</zorder>
+    <zorder>debug</zorder>
+    <zorder>label_2</zorder>
+    <zorder>continuous</zorder>
+    <zorder>so2r</zorder>
+    <zorder>inputs</zorder>
+    <zorder>label_11</zorder>
+    <zorder>saveButton</zorder>
+    <zorder>applyButton</zorder>
+    <zorder>label_12</zorder>
+    <zorder>drop_key</zorder>
+    <zorder>commandLinkButton</zorder>
+    <zorder>label_13</zorder>
+    <zorder>layoutWidget</zorder>
+    <zorder>layoutWidget</zorder>
+    <zorder>layoutWidget</zorder>
+    <zorder>layoutWidget</zorder>
+    <zorder>selectDir_btn</zorder>
    </widget>
   </widget>
  </widget>
  <resources>
-  <include location="bkg-img.qrc"/>
+  <include location="bkg_img.qrc"/>
  </resources>
- <connections/>
+ <connections>
+  <connection>
+   <sender>quitButton_2</sender>
+   <signal>clicked()</signal>
+   <receiver>quitButton</receiver>
+   <slot>click()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>562</x>
+     <y>303</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>562</x>
+     <y>303</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <slot>manual_dump()</slot>
+ </slots>
 </ui>

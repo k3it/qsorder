@@ -22,40 +22,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import subprocess
-import re
-import pyaudio
-import wave
-import time
-import sys
-import threading
-import binascii
-
-try:
-    import pyhk
-    nopyhk = False
-except:
-    nopyhk = True
-
-
-import platform
-import ctypes
-
-import datetime
-import dateutil.parser
-
+import os, sys, subprocess, threading, platform, ctypes
 import argparse
+import re, binascii
+import wave, pyaudio
+import time, datetime, dateutil.parser
+import logging
+
 from collections import deque
 from socket import *
 from xml.dom.minidom import parseString
 import xml.parsers.expat
-
-# import audioop
-# from math import log10
-
-import logging
-
 
 from PySide.QtCore import * 
 from PySide.QtGui import *
@@ -63,9 +40,6 @@ from PySide.QtUiTools import *
 from PySide import QtXml
 
 from qgui import *
-
-
-
 
 CHUNK      = 1024
 FORMAT     = pyaudio.paInt16
@@ -170,9 +144,9 @@ class qsorder(object):
 
         max_devs = self.p.get_device_count()
         self.inputs = {}
+        self.selected_input = None
         if (self.options.query_inputs):
-            print "Detected", max_devs, "devices\n"       ################################
-            print "Device index Description"
+            print "\nDevice index Description"
             print "------------ -----------"
         for i in range(max_devs):
             p = pyaudio.PyAudio()
@@ -188,9 +162,20 @@ class qsorder(object):
                             print "\t", i, "\t", devinfo['name'].encode('unicode_escape')
                         else:
                             self.inputs[devinfo['name']] = i
+                            if (i == self.options.device_index):
+                                self.selected_input = devinfo['name']
                 except ValueError:
                     print("uknown chardets in sound input name.")
                     pass
+
+        #find the default input 
+        if not self.options.device_index:
+            try:
+                def_index = self.p.get_default_input_device_info()
+                self.selected_input = def_index['name']
+            except IOError as e:
+                self.update_console.emit("No Default innput device: %s" % e[0])
+
         self.p.terminate()
         if (self.options.query_inputs):
             exit(0)
@@ -199,25 +184,43 @@ class qsorder(object):
         
         app = QApplication(sys.argv)
         self.qsorder = qsorderApp(self.options)
+        
+        #populate inputs comnbobox
         self.qsorder.ui.inputs.addItems(self.inputs.keys())
+        if (self.selected_input):
+            idx = self.qsorder.ui.inputs.findText(self.selected_input)
+            self.qsorder.ui.inputs.setCurrentIndex(idx)
 
         self.qsorder.ui.applyButton.clicked.connect(self._apply_settings)
         
         self.qsorder.ui.quitButton.clicked.connect(self._stopQsorder)
+        self.qsorder.ui.selectDir_btn.clicked.connect(self._selectPath)
+
+        self._apply_settings()
 
 
         sys.exit(app.exec_())
+
+    def _selectPath(self):
+        self.qsorder.ui.path.setText(QFileDialog.getExistingDirectory(options=QFileDialog.DontUseNativeDialog))
 
     def _apply_settings(self):
         self.options.buffer_length = self.qsorder.ui.buffer.value()
         self.options.delay         = self.qsorder.ui.delay.value()
         self.options.port          = self.qsorder.ui.port.value()
         self.options.path          = self.qsorder.ui.path.text()
+        
         self.options.hot_key       = self.qsorder.ui.hotkey.text()
+        self.qsorder.ui.manual_dump_btn.setShortcut(QKeySequence("Ctrl+Alt+" + self.qsorder.ui.hotkey.text()))
+        
         self.options.debug         = self.qsorder.ui.debug.isChecked()
         self.options.continuous    = self.qsorder.ui.continuous.isChecked()
         self.options.so2r          = self.qsorder.ui.so2r.isChecked()
-        self.options.device_index  = self.inputs[self.qsorder.ui.inputs.currentText()]
+        try:
+            self.options.device_index  = self.inputs[self.qsorder.ui.inputs.currentText()]
+        except KeyError as e:
+            self._update_text("Invalid Input device index: %s" % self.options.device_index)
+            return
 
 
         try:
@@ -228,6 +231,8 @@ class qsorder(object):
         self.thread = recording_loop(self.options)
         # self.thread = test_thread(self.options)
         self.thread.update_console.connect(self._update_text)
+        self.qsorder.ui.manual_dump_btn.clicked.connect(self.thread._manual_dump)
+
         self.thread.start()
 
     def _update_text(self,txt):
@@ -281,6 +286,7 @@ class recording_loop(QThread):
         self.p = pyaudio.PyAudio()
         self._isRunning = True
 
+
     def quit(self):
         self._isRunning = False
 
@@ -330,18 +336,9 @@ class recording_loop(QThread):
             self.update_console.emit("could not convert wav to mp3 " + w.wavfile)
 
     def _manual_dump(self):
-        self.update_console.emit("QSO: " + datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S") + " HOTKEY pressed")
-        self._dump_audio("HOTKEY", "AUDIO", "RF", 0, datetime.datetime.utcnow(), 73)
-
-    def _hotkey(self):
-        if nopyhk:
-            return
-        # create pyhk class instance
-        hot = pyhk.pyhk()
-
-        # add hotkey
-        hot.addHotkey(['Ctrl', 'Alt', HOTKEY], self._manual_dump, isThread=False)
-        hot.start()
+        self.update_console.emit("QSO: " + datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S")
+                + " Ctrl+Alt+" + HOTKEY + " HOTKEY pressed")
+        self._dump_audio("HOTKEY", "AUDIO", "RF", 0, datetime.datetime.utcnow(), 73, self.sampwidth)
 
     def _get_free_space_mb(self,folder):
         """ Return folder/drive free space (in bytes)
@@ -444,7 +441,11 @@ class recording_loop(QThread):
         MYPORT = self.options.port
 
         if (self.options.path):
-            os.chdir(self.options.path)
+            try:
+                os.chdir(self.options.path)
+            except:
+                self.update_console.emit("Invalid directory specified: " + self.options.path )
+                return
 
         if (len(self.options.hot_key) == 1):
             global HOTKEY
@@ -459,14 +460,6 @@ class recording_loop(QThread):
             logging.debug('debug log started')
             logging.debug('qsorder self.options:')
             logging.debug(self.options)
-
-
-        # start hotkey monitoring thread
-        if not nopyhk:
-            t = threading.Thread(target=self._hotkey)
-            t.setDaemon(True)
-            t.start()
-
 
         self.update_console.emit("--------------------------------------")
         self.update_console.emit("v3.0 QSO Recorder for N1MM, 2016 K3IT")
@@ -526,21 +519,18 @@ class recording_loop(QThread):
         # start the stream
         stream.start_stream()
 
-        sampwidth = self.p.get_sample_size(FORMAT)
+        self.sampwidth = self.p.get_sample_size(FORMAT)
 
 
         self.update_console.emit("* recording " + str(CHANNELS) + "ch, " 
             + str(dqlength * CHUNK / RATE) + " secs audio buffer, Delay:" + str(DELAY) + " secs")
         self.update_console.emit("Output directory: " + os.getcwd() + "\\<contest...>")
-        if nopyhk:
-            self.update_console.emit("Hotkey functionality is disabled")
-        else:
-            self.update_console.emit("Hotkey: CTRL+ALT+" + HOTKEY)
+        self.update_console.emit("Hotkey: CTRL+ALT+" + HOTKEY)
         if (self.options.station_nr > 0):
             self.update_console.emit("Recording only station " + str(self.options.station_nr) + "QSOs")
         if (self.options.continuous):
             self.update_console.emit("Full contest recording enabled.")
-        self.update_console.emit("--------------------------------\n")
+        self.update_console.emit("--------------------------------------\n")
 
 
         #start continious mp3 writer thread
@@ -629,7 +619,7 @@ class recording_loop(QThread):
 
                         calls = call + "_de_" + mycall
 
-                        t = threading.Timer(DELAY, self._dump_audio, [calls, contest, mode, freq, timestamp, radio_nr, sampwidth])
+                        t = threading.Timer(DELAY, self._dump_audio, [calls, contest, mode, freq, timestamp, radio_nr, self.sampwidth])
                         self.update_console.emit("QSO: " + timestamp.strftime("%m-%d %H:%M:%S") + " " + call + " " + freq)
                         t.start()
                     except:

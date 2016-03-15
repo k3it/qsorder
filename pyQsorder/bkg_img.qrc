@@ -1,0 +1,11 @@
+<RCC>
+  <qresource prefix="bkground">
+    <file>ricepaper_v3.png</file>
+  </qresource>
+  <qresource prefix="icon">
+    <file>qsorder.ico</file>
+  </qresource>
+  <qresource prefix="logo">
+    <file>qsorder.png</file>
+  </qresource>
+</RCC>
