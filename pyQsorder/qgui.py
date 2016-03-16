@@ -2,6 +2,7 @@ from PySide.QtCore import *
 from PySide.QtGui import *
 from PySide.QtUiTools import *
 import os
+import webbrowser
 
 import qsorder_ui
 
@@ -16,6 +17,9 @@ class qsorderApp(QWidget):
         super(qsorderApp, self).__init__()
         self.options = options
         self.initUI()
+
+    def _register(self):
+        webbrowser.open('http://qsorder-k3it.rhcloud.com/register')
 
 
     def initUI(self):
@@ -51,13 +55,13 @@ class qsorderApp(QWidget):
         # self.layout.addWidget(self.stopbtn, 0, 0)   # button goes in upper-left
 
         self.ui.quitButton.clicked.connect(QCoreApplication.instance().quit)
+        self.ui.getDropbox_btn.clicked.connect(self._register)
 
         # process arguments
         self.ui.buffer.setValue(self.options.buffer_length)
         self.ui.delay.setValue(self.options.delay)
         self.ui.port.setValue(self.options.port)
         if self.options.path:
-            print "setting: ", self.options.path
             self.ui.path.setText(self.options.path)
         else:
             self.ui.path.setText(os.getcwd())

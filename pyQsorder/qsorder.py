@@ -22,6 +22,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+__version__ = '3.0'
+
 import os, sys, subprocess, threading, platform, ctypes
 import argparse
 import re, binascii
@@ -198,6 +200,10 @@ class qsorder(object):
 
         self._apply_settings()
 
+        self.timer = QTimer()
+        self.timer.timeout.connect(self._update_status)
+        self.timer.start(1000)
+
 
         sys.exit(app.exec_())
 
@@ -232,8 +238,35 @@ class qsorder(object):
         # self.thread = test_thread(self.options)
         self.thread.update_console.connect(self._update_text)
         self.qsorder.ui.manual_dump_btn.clicked.connect(self.thread._manual_dump)
-
         self.thread.start()
+        self.thread.wait(500)
+
+
+        self._update_status()
+
+    def _update_status(self):
+        palette = QPalette()
+        if self.thread.isRunning():
+            palette.setColor(QPalette.Foreground,Qt.blue)
+            self.qsorder.ui.label_status.setPalette(palette)
+            msg = "Running, " +  str(self.thread._get_free_space_mb(self.options.path)/1024) + " GB free"
+            self.qsorder.ui.label_status.setText(msg)
+            self.qsorder.ui.label_input.setText(self.thread.input)
+            self.qsorder.ui.label_port.setText(str(self.options.port))
+            self.qsorder.ui.label_buffer.setText(str(self.options.buffer_length))
+            self.qsorder.ui.label_delay.setText(str(self.options.delay))
+            self.qsorder.ui.label_version.setText(__version__)
+            self.qsorder.ui.label_queue.setText(str(self.thread.qsos_in_queue))
+        else:
+            palette.setColor(QPalette.Foreground,Qt.red)
+            self.qsorder.ui.label_status.setPalette(palette)
+            self.qsorder.ui.label_status.setText("Stopped")
+            self.qsorder.ui.label_input.setText(None)
+            self.qsorder.ui.label_port.setText(None)
+            self.qsorder.ui.label_buffer.setText(None)
+            self.qsorder.ui.label_delay.setText(None)
+            self.qsorder.ui.label_queue.setText("0")
+
 
     def _update_text(self,txt):
         self.qsorder.ui.console.appendPlainText(txt)
@@ -253,6 +286,7 @@ class qsorder(object):
             print "Tired of waiting, killing thread"
             self.thread.terminate()
             self.thread.wait(500)
+
 
 class test_thread(QThread):
     
@@ -285,6 +319,8 @@ class recording_loop(QThread):
         self.options = options
         self.p = pyaudio.PyAudio()
         self._isRunning = True
+        self.input = None
+        self.qsos_in_queue = 0
 
 
     def quit(self):
@@ -334,6 +370,9 @@ class recording_loop(QThread):
             os.remove(w.wavfile)
         except:
             self.update_console.emit("could not convert wav to mp3 " + w.wavfile)
+
+        if (call != "HOTKEY"):
+            self.qsos_in_queue -= 1
 
     def _manual_dump(self):
         self.update_console.emit("QSO: " + datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S")
@@ -452,8 +491,7 @@ class recording_loop(QThread):
             HOTKEY = self.options.hot_key.upper()
         else:
             self.update_console.emit("Hotkey should be a single character")
-            parser.print_help()
-            exit(-1)
+            return
 
         if (self.options.debug):
             logging.basicConfig(filename=DEBUG_FILE, level=logging.DEBUG, format='%(asctime)s %(message)s')
@@ -470,6 +508,7 @@ class recording_loop(QThread):
             try:
                 def_index = self.p.get_device_info_by_index(self.options.device_index)
                 self.update_console.emit("Input Device: " + def_index['name'])
+                self.input = def_index['name']
                 DEVINDEX = self.options.device_index
             except IOError as e:
                 self.update_console.emit("Invalid Input device: %s" % e[0])
@@ -481,6 +520,7 @@ class recording_loop(QThread):
                 def_index = self.p.get_default_input_device_info()
                 msg = "Input Device: " +  str(def_index['index']) + " " + str(def_index['name'])
                 self.update_console.emit(msg)
+                self.input = def_index['name']
                 DEVINDEX = def_index['index']
             except IOError as e:
                 self.update_console.emit("No Input devices: %s" % e[0])
@@ -622,6 +662,7 @@ class recording_loop(QThread):
                         t = threading.Timer(DELAY, self._dump_audio, [calls, contest, mode, freq, timestamp, radio_nr, self.sampwidth])
                         self.update_console.emit("QSO: " + timestamp.strftime("%m-%d %H:%M:%S") + " " + call + " " + freq)
                         t.start()
+                        self.qsos_in_queue += 1
                     except:
                         if (self.options.debug):
                             logging.debug('Could not parse previous packet')
