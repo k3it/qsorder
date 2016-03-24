@@ -10,6 +10,7 @@ Download stable windows executable under [Releases](https://github.com/k3it/qsor
 
 v3.0 GUI version is still work in progress 
 
+![screenshot](https://raw.githubusercontent.com/k3it/qsorder/master/qsorder.png)
 
 
 73! K3IT
