@@ -369,7 +369,7 @@ class recording_loop(QThread):
             self.update_console.emit(msg.rstrip())    
             os.remove(w.wavfile)
         except:
-            self.update_console.emit("could not convert wav to mp3 " + w.wavfile)
+            self.update_console.emit("could not convert wav to mp3 " + sys.exc_info())
 
         if (call != "HOTKEY"):
             self.qsos_in_queue -= 1

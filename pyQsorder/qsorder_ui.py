@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'qsorder.ui'
 #
-# Created: Tue Mar 15 23:15:16 2016
+# Created: Wed Mar 16 19:46:20 2016
 #      by: pyside-uic 0.2.15 running on PySide 1.2.4
 #
 # WARNING! All changes made in this file will be lost!

@@ -4,6 +4,8 @@ from PySide.QtUiTools import *
 import os
 import webbrowser
 
+from _winreg import *
+
 import qsorder_ui
 
 # import pyqtgraph as pg
@@ -64,7 +66,14 @@ class qsorderApp(QWidget):
         if self.options.path:
             self.ui.path.setText(self.options.path)
         else:
-            self.ui.path.setText(os.getcwd())
+            try:
+                aReg = ConnectRegistry(None,HKEY_CURRENT_USER)
+                key = OpenKey(aReg, r"Software\N1MM Logger+")
+                path = QueryValueEx(key,'userdir')[0] + "\\QsoRecording"
+                self.ui.path.setText(path)
+            except:
+                self.ui.path.setText(os.getcwd())
+
         self.ui.hotkey.setText(self.options.hot_key.upper())
         self.ui.debug.setChecked(self.options.debug)
         self.ui.continuous.setChecked(self.options.continuous)
