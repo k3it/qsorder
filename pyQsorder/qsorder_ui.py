@@ -2,8 +2,8 @@
 
 # Form implementation generated from reading ui file 'qsorder.ui'
 #
-# Created: Wed Mar 16 19:46:20 2016
-#      by: pyside-uic 0.2.15 running on PySide 1.2.4
+# Created: Tue Jul 05 23:26:00 2016
+#      by: pyside-uic 0.2.15 running on PySide 1.2.2
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -142,7 +142,7 @@ class Ui_Form(object):
         self.label_23.setFont(font)
         self.label_23.setObjectName("label_23")
         self.label_dropbox_status = QtGui.QLabel(self.console_tab)
-        self.label_dropbox_status.setGeometry(QtCore.QRect(107, 289, 71, 16))
+        self.label_dropbox_status.setGeometry(QtCore.QRect(107, 289, 141, 16))
         self.label_dropbox_status.setObjectName("label_dropbox_status")
         self.tabWidget.addTab(self.console_tab, "")
         self.config_tab = QtGui.QWidget()
@@ -255,23 +255,23 @@ class Ui_Form(object):
         self.station_nr.setProperty("value", 0)
         self.station_nr.setObjectName("station_nr")
         self.horizontalLayout.addWidget(self.station_nr)
-        self.widget = QtGui.QWidget(self.config_tab)
-        self.widget.setGeometry(QtCore.QRect(160, 80, 451, 24))
-        self.widget.setObjectName("widget")
-        self.horizontalLayout_4 = QtGui.QHBoxLayout(self.widget)
+        self.layoutWidget3 = QtGui.QWidget(self.config_tab)
+        self.layoutWidget3.setGeometry(QtCore.QRect(160, 80, 451, 24))
+        self.layoutWidget3.setObjectName("layoutWidget3")
+        self.horizontalLayout_4 = QtGui.QHBoxLayout(self.layoutWidget3)
         self.horizontalLayout_4.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_4.setObjectName("horizontalLayout_4")
         self.horizontalLayout_2 = QtGui.QHBoxLayout()
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
-        self.label_9 = QtGui.QLabel(self.widget)
+        self.label_9 = QtGui.QLabel(self.layoutWidget3)
         self.label_9.setObjectName("label_9")
         self.horizontalLayout_2.addWidget(self.label_9)
-        self.path = QtGui.QLineEdit(self.widget)
+        self.path = QtGui.QLineEdit(self.layoutWidget3)
         self.path.setReadOnly(True)
         self.path.setObjectName("path")
         self.horizontalLayout_2.addWidget(self.path)
         self.horizontalLayout_4.addLayout(self.horizontalLayout_2)
-        self.selectDir_btn = QtGui.QToolButton(self.widget)
+        self.selectDir_btn = QtGui.QToolButton(self.layoutWidget3)
         self.selectDir_btn.setObjectName("selectDir_btn")
         self.horizontalLayout_4.addWidget(self.selectDir_btn)
         self.tabWidget.addTab(self.config_tab, "")

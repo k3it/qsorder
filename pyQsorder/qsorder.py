@@ -43,6 +43,8 @@ from PySide import QtXml
 
 from qgui import *
 
+import dropbox
+
 CHUNK      = 1024
 FORMAT     = pyaudio.paInt16
 CHANNELS   = 2
@@ -198,12 +200,16 @@ class qsorder(object):
         self.qsorder.ui.quitButton.clicked.connect(self._stopQsorder)
         self.qsorder.ui.selectDir_btn.clicked.connect(self._selectPath)
 
-        self._apply_settings()
 
         self.timer = QTimer()
         self.timer.timeout.connect(self._update_status)
         self.timer.start(1000)
 
+        self.timer_dropbox = QTimer()
+        self.timer_dropbox.timeout.connect(self._update_status_dropbox)
+        self.timer_dropbox.start(60 * 1000)
+
+        self._apply_settings()
 
         sys.exit(app.exec_())
 
@@ -222,6 +228,18 @@ class qsorder(object):
         self.options.debug         = self.qsorder.ui.debug.isChecked()
         self.options.continuous    = self.qsorder.ui.continuous.isChecked()
         self.options.so2r          = self.qsorder.ui.so2r.isChecked()
+
+        self.options.drop_key      = self.qsorder.ui.drop_key.text()
+        self.client = None
+
+        if self.options.drop_key:
+            self.client = dropbox.Dropbox(self.options.drop_key)
+            # force dropbox status update
+            self.timer_dropbox.start() # restart the timer
+            self.timer_dropbox.timeout.emit() # force an immediate update
+
+
+
         try:
             self.options.device_index  = self.inputs[self.qsorder.ui.inputs.currentText()]
         except KeyError as e:
@@ -243,6 +261,10 @@ class qsorder(object):
 
 
         self._update_status()
+
+
+
+
 
     def _update_status(self):
         palette = QPalette()
@@ -266,6 +288,25 @@ class qsorder(object):
             self.qsorder.ui.label_buffer.setText(None)
             self.qsorder.ui.label_delay.setText(None)
             self.qsorder.ui.label_queue.setText("0")
+
+    def _update_status_dropbox(self):
+        
+        if self.client is None:
+            return
+        palette = QPalette()
+        #check dropbox status
+        try:
+            usage = self.client.users_get_space_usage()
+            palette.setColor(QPalette.Foreground,Qt.blue)
+            self.qsorder.ui.label_dropbox_status.setPalette(palette)
+        except:
+             msg = 'Error'
+        # msg = "Key: " + self.options.drop_key + datetime.datetime.utcnow().strftime('%H:%S')
+        used_bytes = float(usage.used)
+        total_bytes = float(usage.allocation.get_individual().allocated)
+        msg = "%.1f%% of %.1fGB used" % (used_bytes*100/total_bytes, total_bytes/1024/1024/1024)
+
+        self.qsorder.ui.label_dropbox_status.setText(msg)
 
 
     def _update_text(self,txt):
