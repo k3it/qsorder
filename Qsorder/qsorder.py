@@ -5,7 +5,7 @@
 # Title: qsorder.py
 # Author: k3it
 # Generated: Tue, May 26 2015
-# Version: 2.8
+# Version: 2.9
 ##################################################
 
 # qsorder is free software: you can redistribute it and/or modify
@@ -337,7 +337,7 @@ def main(argslist=None):
 
 
     print("--------------------------------------")
-    print "v2.8 QSO Recorder for N1MM, 2015 K3IT\n"
+    print "v2.9 QSO Recorder for N1MM, 2015 K3IT\n"
     print("--------------------------------------")
 
     # global p
