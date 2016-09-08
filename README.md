@@ -3,11 +3,14 @@
 [![Documentation Status](https://readthedocs.org/projects/qsorder/badge/?version=latest)](http://qsorder.readthedocs.org/en/latest/?badge=latest)
                 
 
-qsorder - a console app for audio recordig of N1MM contest QSOs.
+qsorder - audio recordig app for N1MM and TR4W contest QSOs.
 ================================================================
-
-v3.0 - work in progress
-
 Download stable windows executable under [Releases](https://github.com/k3it/qsorder/releases)
+
+
+v3.0 GUI version is still work in progress 
+
+![screenshot](https://raw.githubusercontent.com/k3it/qsorder/master/qsorder.png)
+
 
 73! K3IT
