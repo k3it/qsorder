@@ -4,8 +4,8 @@
 # qsorder - A contest QSO recorder
 # Title: qsorder.py
 # Author: k3it
-# Generated: Tue, May 26 2015
-# Version: 2.8
+# Generated: Wed, Sept 7 2016
+# Version: 2.9
 ##################################################
 
 # qsorder is free software: you can redistribute it and/or modify
@@ -166,7 +166,8 @@ def dump_audio(call, contest, mode, freq, qso_time, radio_nr, sampwidth):
 
 def manual_dump():
     print "QSO:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), "HOTKEY pressed"
-    dump_audio("HOTKEY", "AUDIO", "RF", 0, datetime.datetime.utcnow(), 73)
+    dump_audio("HOTKEY", "AUDIO", "RF", 0, datetime.datetime.utcnow(), 73, 2)
+
 
 def hotkey():
     if nopyhk:
@@ -337,7 +338,7 @@ def main(argslist=None):
 
 
     print("--------------------------------------")
-    print "v2.8 QSO Recorder for N1MM, 2015 K3IT\n"
+    print "v2.9 QSO Recorder for N1MM, 2016 K3IT\n"
     print("--------------------------------------")
 
     # global p
@@ -418,7 +419,6 @@ def main(argslist=None):
     stream.start_stream()
 
     sampwidth = p.get_sample_size(FORMAT)
-
 
     print "* recording", CHANNELS, "ch,", dqlength * CHUNK / RATE, "secs audio buffer, Delay:", DELAY, "secs"
     print "Output directory", os.getcwd() + "\\<contest...>"
