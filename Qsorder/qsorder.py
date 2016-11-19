@@ -4,8 +4,8 @@
 # qsorder - A contest QSO recorder
 # Title: qsorder.py
 # Author: k3it
-# Generated: Wed, Sept 7 2016
-# Version: 2.9
+# Generated: Thu, Nov 17 2016
+# Version: 2.10
 ##################################################
 
 # qsorder is free software: you can redistribute it and/or modify
@@ -300,6 +300,9 @@ def main(argslist=None):
                             help="SO2R mode, downmix to mono: Left Ch - Radio1 QSOs, Right Ch - Radio2 QSOs [default=%(default)s]")
     parser.add_argument("-s", "--station-nr", type=int, default=None,
                             help="Network Station Number [default=%(default)s]")
+    parser.add_argument("-r", "--radio-nr", type=int, default=None,
+                            help="Radio Number [default=%(default)s]")
+
 
 
     global options
@@ -338,7 +341,7 @@ def main(argslist=None):
 
 
     print("--------------------------------------")
-    print "v2.9 QSO Recorder for N1MM, 2016 K3IT\n"
+    print "v2.10 QSO Recorder for N1MM, 2016 K3IT\n"
     print("--------------------------------------")
 
     # global p
@@ -507,8 +510,14 @@ def main(argslist=None):
 
                     # skip packet if not matching network station number specified in the command line
                     if (options.station_nr >= 0):
-                        if (options.station_nr != station):
+                        if (options.station_nr != int(station)):
                             print "QSO:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring from stn", station
+                            continue
+
+                    # skip packet if not matching radio number specified in the command line
+                    if (options.radio_nr >= 0):
+                        if (options.radio_nr != int(radio_nr)):
+                            print "QSO:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring from radio/VFO", radio_nr
                             continue
 
                     # skip packet if QSO was more than DELAY seconds ago
