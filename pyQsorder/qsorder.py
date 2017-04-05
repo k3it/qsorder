@@ -292,6 +292,8 @@ class qsorder(object):
     def _update_status_dropbox(self):
         
         if self.client is None:
+            msg = "Not configured"
+            self.qsorder.ui.label_dropbox_status.setText(msg)
             return
         palette = QPalette()
         #check dropbox status
@@ -299,13 +301,12 @@ class qsorder(object):
             usage = self.client.users_get_space_usage()
             palette.setColor(QPalette.Foreground,Qt.blue)
             self.qsorder.ui.label_dropbox_status.setPalette(palette)
+            used_bytes = float(usage.used)
+            total_bytes = float(usage.allocation.get_individual().allocated)
+            msg = "%.1f%% of %.1fGB used" % (used_bytes*100/total_bytes, total_bytes/1024/1024/1024)
         except:
-             msg = 'Error'
+             msg = 'Error - check key'
         # msg = "Key: " + self.options.drop_key + datetime.datetime.utcnow().strftime('%H:%S')
-        used_bytes = float(usage.used)
-        total_bytes = float(usage.allocation.get_individual().allocated)
-        msg = "%.1f%% of %.1fGB used" % (used_bytes*100/total_bytes, total_bytes/1024/1024/1024)
-
         self.qsorder.ui.label_dropbox_status.setText(msg)
 
 
