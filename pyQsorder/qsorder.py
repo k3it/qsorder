@@ -5,8 +5,7 @@
 # qsorder - A contest QSO recorder
 # Title: qsorder.py
 # Author: k3it
-# Generated: Tue, May 26 2015
-# Version: 2.8
+# Version: 3.0
 ##################################################
 
 # qsorder is free software: you can redistribute it and/or modify
@@ -61,7 +60,7 @@ class wave_file:
         """
         class definition for the WAV file object
         """
-        def __init__(self, samp_rate, LO, BASENAME, qso_time, contest_dir, mode, sampwidth):
+        def __init__(self, samp_rate, LO, BASENAME, qso_time, contest_dir, mode, sampwidth, path):
                 now = qso_time
 
                 self.wavfile = BASENAME + "_"
@@ -83,9 +82,9 @@ class wave_file:
                 # fix slash in the file/directory name
                 self.wavfile     = self.wavfile.replace('/', '-')
                 self.contest_dir = self.contest_dir.replace('/', '-')
-                
-                self.wavfile     = self.contest_dir + "/" + self.wavfile
-                
+                self.contest_dir = path + "/" + self.contest_dir
+                self.wavfile     =  self.contest_dir + "/" + self.wavfile
+
                 # get ready to write wave file
                 try:
                     if not os.path.exists(self.contest_dir):
@@ -283,6 +282,7 @@ class qsorder(object):
             self.qsorder.ui.label_status.setText(msg)
             self.qsorder.ui.label_input.setText(self.thread.input)
             self.qsorder.ui.label_port.setText(str(self.options.port))
+
             self.qsorder.ui.label_buffer.setText(str(self.options.buffer_length))
             self.qsorder.ui.label_delay.setText(str(self.options.delay))
             self.qsorder.ui.label_version.setText(__version__)
@@ -381,18 +381,20 @@ class recording_loop(QThread):
         # create the wave file
         BASENAME = call + "_" + contest + "_" + mode
         BASENAME = BASENAME.replace('/', '-')
-        w = wave_file(RATE, freq, BASENAME, qso_time, contest, mode, sampwidth)
+        w = wave_file(RATE, freq, BASENAME, qso_time, contest, mode, sampwidth, self.options.path)
         __data = (b''.join(frames))
         bytes_written = w.write(__data)
         w.close_wave()
 
         # try to convert to mp3
-        lame_path = os.path.dirname(os.path.realpath(__file__))
-        lame_path += "\\lame.exe"
+        # lame_path = os.path.dirname(os.path.realpath(__file__))
+        # lame_path += "\\lame.exe"
 
-        if not os.path.isfile(lame_path):
-            #try to use one in the system path
-            lame_path = 'lame.exe'
+        # if not os.path.isfile(lame_path):
+        #     #try to use one in the system path
+        #     lame_path = 'lame.exe'
+
+        lame_path = self.lame_path
 
         if (self.options.so2r and radio_nr == "1"):
             command = [lame_path]
@@ -446,15 +448,17 @@ class recording_loop(QThread):
             return st.f_bavail * st.f_frsize/1024/1024
 
     def _start_new_lame_stream(self):
-        lame_path = os.path.dirname(os.path.realpath(__file__))
-        lame_path += "\\lame.exe"
+        # lame_path = os.path.dirname(os.path.realpath(__file__))
+        # lame_path += "\\lame.exe"
 
-        if not os.path.isfile(lame_path):
-            #try to use one in the system path
-            lame_path = 'lame'
+        # if not os.path.isfile(lame_path):
+        #     #try to use one in the system path
+        #     lame_path = 'lame'
+
+        lame_path = self.lame_path
 
         now = datetime.datetime.utcnow()
-        contest_dir = "AUDIO_" + str(now.year)
+        contest_dir = self.options.path + "/" + "AUDIO_" + str(now.year)
         if not os.path.exists(contest_dir):
             os.makedirs(contest_dir)
 
@@ -477,7 +481,7 @@ class recording_loop(QThread):
         try:
             mp3handle = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
         except:
-            self.update_console.emit("CTL error starting mp3 recording.  Exiting..")
+            self.update_console.emit("CTL: error starting continous mp3 recording.")
             exit(-1)
 
         self.update_console.emit("CTL: " + str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + "Z started new .mp3 file: " + filename)
@@ -487,7 +491,7 @@ class recording_loop(QThread):
         return mp3handle,filename
         #write continious mp3 stream to disk in a separate worker thread
 
-    def _writer(self):
+    def _writer(self, stop_event):
         # start new lame recording
         now = datetime.datetime.utcnow()
         utchr = now.hour
@@ -497,7 +501,7 @@ class recording_loop(QThread):
         bytes_written = 0
         avg_rate = 0
         
-        while True:
+        while (not stop_event.is_set()) :
             #open a new file on top of the hour
             now = datetime.datetime.utcnow()
             if utchr != now.hour:
@@ -528,15 +532,53 @@ class recording_loop(QThread):
                     self.update_console.emit("CTL: WARNING: Low Disk space")
                 utcmin = now.minute
 
+        #stop signal received
+        lame.terminate()
+
+    def _which(self,program):
+        #find executable in path. from http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
+        def is_exe(fpath):
+            return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+        fpath, fname = os.path.split(program)
+        if fpath:
+            if is_exe(program):
+                return program
+        else:
+            pathlist = [os.path.dirname(os.path.realpath(__file__)), os.getcwd()]
+            pathlist.extend(os.environ["PATH"].split(os.pathsep))
+            for path in pathlist:
+                path = path.strip('"')
+                exe_file = os.path.join(path, program)
+                if is_exe(exe_file):
+                    return exe_file
+
+        return None
+
     def run(self):
         dqlength = int(self.options.buffer_length * RATE / CHUNK) + 1
         DELAY = self.options.delay
         global MYPORT
         MYPORT = self.options.port
 
+
+        self.update_console.emit("--------------------------------------")
+        self.update_console.emit("v3.0 QSO Recorder for N1MM, 2016 K3IT")
+        self.update_console.emit("--------------------------------------")
+
+        if platform.system() == 'Windows':
+            self.lame_path = self._which('lame.exe')
+        else:
+            self.lame_path = self._which('lame')
+
+        if (not self.lame_path):
+            self.update_console.emit("CTL: Cannot find lame encoder executable")
+        else:
+            self.update_console.emit("mp3 encoder: " + self.lame_path)
+
         if (self.options.path):
             try:
-                os.chdir(self.options.path)
+                os.path.isdir(self.options.path)
             except:
                 self.update_console.emit("Invalid directory specified: " + self.options.path )
                 return
@@ -553,10 +595,6 @@ class recording_loop(QThread):
             logging.debug('debug log started')
             logging.debug('qsorder self.options:')
             logging.debug(self.options)
-
-        self.update_console.emit("--------------------------------------")
-        self.update_console.emit("v3.0 QSO Recorder for N1MM, 2016 K3IT")
-        self.update_console.emit("--------------------------------------")
 
 
         if (self.options.device_index):
@@ -619,7 +657,7 @@ class recording_loop(QThread):
 
         self.update_console.emit("* recording " + str(CHANNELS) + "ch, " 
             + str(dqlength * CHUNK / RATE) + " secs audio buffer, Delay:" + str(DELAY) + " secs")
-        self.update_console.emit("Output directory: " + os.getcwd() + "\\<contest...>")
+        self.update_console.emit("Output directory: " + self.options.path + "\\<contest...>")
         self.update_console.emit("Hotkey: CTRL+ALT+" + HOTKEY)
         if (self.options.station_nr > 0):
             self.update_console.emit("Recording only station " + str(self.options.station_nr) + "QSOs")
@@ -630,7 +668,8 @@ class recording_loop(QThread):
 
         #start continious mp3 writer thread
         if (self.options.continuous):
-            mp3 = threading.Thread(target=self._writer)
+            mp3_stop = threading.Event()
+            mp3 = threading.Thread(target=self._writer, args=(mp3_stop,))
             mp3.setDaemon(True)
             mp3.start()
 
@@ -658,6 +697,9 @@ class recording_loop(QThread):
 
                 if (udp_data == "qsorder_exit_loop_DEADBEEF" or self._isRunning == False):
                     logging.debug("Received Exit magic signal")
+                    if 'mp3' in locals():
+                        mp3_stop.set()
+                        time.sleep(10)
                     break
 
 
