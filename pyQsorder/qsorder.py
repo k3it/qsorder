@@ -255,6 +255,7 @@ class qsorder(object):
         self.thread = recording_loop(self.options)
         # self.thread = test_thread(self.options)
         self.thread.update_console.connect(self._update_text)
+        self.thread.upload_to_dropbox.connect(self._upload_to_dropbox)
         self.qsorder.ui.manual_dump_btn.clicked.connect(self.thread._manual_dump)
         self.thread.start()
         self.thread.wait(500)
@@ -263,7 +264,14 @@ class qsorder(object):
         self._update_status()
 
 
-
+    def _upload_to_dropbox(self,file):
+        if ('%' in self.qsorder.ui.label_dropbox_status.text()):
+            file = re.sub('\.wav$', '.mp3', file)
+            try:
+                with open(file) as f:
+                    self.client.files_upload(f, "/" + file, mute=False)
+            except Exception as err:
+                self._update_text("Failed to upload %s\n%s" % (file, err))
 
 
     def _update_status(self):
@@ -355,6 +363,7 @@ class recording_loop(QThread):
     main recording class
     '''
     update_console = Signal(str)
+    upload_to_dropbox = Signal(str)
 
     def __init__(self, options):
         super(recording_loop, self).__init__()
@@ -383,8 +392,7 @@ class recording_loop(QThread):
 
         if not os.path.isfile(lame_path):
             #try to use one in the system path
-            lame_path = 'lame'
-
+            lame_path = 'lame.exe'
 
         if (self.options.so2r and radio_nr == "1"):
             command = [lame_path]
@@ -410,8 +418,13 @@ class recording_loop(QThread):
                 + ".." + str(freq) + "Mhz.mp3 " + gain.group(0)
             self.update_console.emit(msg.rstrip())    
             os.remove(w.wavfile)
+
+            # send notification that the file is ready for dropbox upload
+            self.upload_to_dropbox.emit(w.wavfile)
+
         except:
-            self.update_console.emit("could not convert wav to mp3 " + sys.exc_info())
+            self.update_console.emit("could not convert wav to mp3 " + str(sys.exc_info()))
+
 
         if (call != "HOTKEY"):
             self.qsos_in_queue -= 1
