@@ -63,6 +63,8 @@ class qsorderApp(QWidget):
         self.ui.buffer.setValue(self.options.buffer_length)
         self.ui.delay.setValue(self.options.delay)
         self.ui.port.setValue(self.options.port)
+        self.ui.drop_key.setText(self.options.drop_key)
+
         if self.options.path:
             self.ui.path.setText(self.options.path)
         else:
@@ -78,6 +80,7 @@ class qsorderApp(QWidget):
         self.ui.debug.setChecked(self.options.debug)
         self.ui.continuous.setChecked(self.options.continuous)
         self.ui.so2r.setChecked(self.options.so2r)
+        self.ui.station_nr.setValue(self.options.station_nr)
 
 
         self.show()

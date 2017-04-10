@@ -29,6 +29,7 @@ import re, binascii
 import wave, pyaudio
 import time, datetime, dateutil.parser
 import logging
+import json
 
 from collections import deque
 from socket import *
@@ -134,13 +135,28 @@ class qsorder(object):
                                 help="Query and print input devices [default=%(default)s]")
         parser.add_argument("-S", "--so2r", action="store_true", default=False,
                                 help="SO2R mode, downmix to mono: Left Ch - Radio1 QSOs, Right Ch - Radio2 QSOs [default=%(default)s]")
-        parser.add_argument("-s", "--station-nr", type=int, default=None,
+        parser.add_argument("-s", "--station-nr", type=int, default=0,
                                 help="Network Station Number [default=%(default)s]")
+        parser.add_argument("-u", "--drop-key", type=str, default=None,
+                                help="Dropbox auth key for file upload [default=%(default)s]")
 
 
         # global self.options
         # arglist can be passed from another python script or at the command line
         self.options = parser.parse_args(argslist)
+
+        #load parameters from json file, if no flags specified on the command line and config file exists 
+        config_file = os.path.dirname(os.path.realpath(__file__)) + "/qsorder-config.txt"
+        if (len(sys.argv[1:]) == 0 and os.path.isfile(config_file)):
+            print "loading config"
+            try:
+                with open(config_file) as params_file:    
+                     params = json.load(params_file)
+                for key in params:
+                    print  "Setting self.options." + key + " to " + str(params[key])
+                    setattr(self.options, key, params[key])
+            except:
+                pass
 
         # global p
         self.p = pyaudio.PyAudio()
@@ -195,6 +211,7 @@ class qsorder(object):
             self.qsorder.ui.inputs.setCurrentIndex(idx)
 
         self.qsorder.ui.applyButton.clicked.connect(self._apply_settings)
+        self.qsorder.ui.saveButton.clicked.connect(self._save_settings)
         
         self.qsorder.ui.quitButton.clicked.connect(self._stopQsorder)
         self.qsorder.ui.selectDir_btn.clicked.connect(self._selectPath)
@@ -262,6 +279,11 @@ class qsorder(object):
 
         self._update_status()
 
+    def _save_settings(self):
+        # apply and save
+        self._apply_settings()
+        with open('qsorder-config.txt','w') as outfile:
+            json.dump(vars(self.options), outfile, sort_keys=True, indent=4)
 
     def _upload_to_dropbox(self,file):
         if ('%' in self.qsorder.ui.label_dropbox_status.text()):
@@ -618,7 +640,7 @@ class recording_loop(QThread):
             except IOError as e:
                 self.update_console.emit("No Input devices: %s" % e[0])
                 self.p.terminate()
-                os._exit(-1)
+                os._exit(-1)    
 
         # queue for chunked recording
         global frames
