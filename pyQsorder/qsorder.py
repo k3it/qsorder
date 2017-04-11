@@ -148,12 +148,12 @@ class qsorder(object):
         #load parameters from json file, if no flags specified on the command line and config file exists 
         config_file = os.path.dirname(os.path.realpath(__file__)) + "/qsorder-config.txt"
         if (len(sys.argv[1:]) == 0 and os.path.isfile(config_file)):
-            print "loading config"
             try:
                 with open(config_file) as params_file:    
                      params = json.load(params_file)
                 for key in params:
-                    print  "Setting self.options." + key + " to " + str(params[key])
+                    if (self.options.debug):
+                        logging.debug("Setting self.options." + key + " to " + str(params[key]))
                     setattr(self.options, key, params[key])
             except:
                 pass
@@ -288,11 +288,14 @@ class qsorder(object):
     def _upload_to_dropbox(self,file):
         if ('%' in self.qsorder.ui.label_dropbox_status.text()):
             file = re.sub('\.wav$', '.mp3', file)
+            # file = file.replace(self.options.path, '')
+            # file = file.replace('\\', '/')
             try:
                 with open(file) as f:
-                    self.client.files_upload(f, "/" + file, mute=False)
+                    self.client.files_upload(f.read(), file.replace(self.options.path, ''), mute=False)
+                    self._update_text("WAV: Uploaded %s\n" % file.replace(self.options.path, ''))
             except Exception as err:
-                self._update_text("Failed to upload %s\n%s" % (file, err))
+                self._update_text("ERR: Failed to upload %s\n%s" % (file.replace(self.options.path, ''), err))
 
 
     def _update_status(self):
