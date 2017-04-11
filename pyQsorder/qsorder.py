@@ -152,8 +152,6 @@ class qsorder(object):
                 with open(config_file) as params_file:    
                      params = json.load(params_file)
                 for key in params:
-                    if (self.options.debug):
-                        logging.debug("Setting self.options." + key + " to " + str(params[key]))
                     setattr(self.options, key, params[key])
             except:
                 pass
@@ -292,7 +290,7 @@ class qsorder(object):
             # file = file.replace('\\', '/')
             try:
                 with open(file) as f:
-                    self.client.files_upload(f.read(), file.replace(self.options.path, ''), mute=False)
+                    self.client.files_upload(f.read(), file.replace(self.options.path, ''), mute=True)
                     self._update_text("WAV: Uploaded %s\n" % file.replace(self.options.path, ''))
             except Exception as err:
                 self._update_text("ERR: Failed to upload %s\n%s" % (file.replace(self.options.path, ''), err))
