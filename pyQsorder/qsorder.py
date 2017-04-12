@@ -284,7 +284,8 @@ class qsorder(object):
             json.dump(vars(self.options), outfile, sort_keys=True, indent=4)
 
     def _upload_to_dropbox(self,file):
-        if ('%' in self.qsorder.ui.label_dropbox_status.text()):
+        # skip upload if dropbox status is bad or for manual audio
+        if ('%' in self.qsorder.ui.label_dropbox_status.text() and not "AUDIO" in file):
             file = re.sub('\.wav$', '.mp3', file)
             # file = file.replace(self.options.path, '')
             # file = file.replace('\\', '/')
