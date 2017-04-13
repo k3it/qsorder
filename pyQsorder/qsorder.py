@@ -510,7 +510,14 @@ class recording_loop(QThread):
         arguments = ["-r", "-s", str(RATE), "-h", "--flush", "--quiet", "--tt", "Qsorder Contest Recording", "--ty", str(now.year), "--tc", os.path.basename(filename), "-", filename]
         command.extend(arguments)
         try:
-            mp3handle = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+            startupinfo = None
+            if platform.system() == 'Windows':
+                import _subprocess  # @bug with python 2.7 ?
+                startupinfo = subprocess.STARTUPINFO()
+                startupinfo.dwFlags |= _subprocess.STARTF_USESHOWWINDOW
+                startupinfo.wShowWindow = _subprocess.SW_HIDE
+
+            mp3handle = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE, startupinfo=startupinfo, stdin=subprocess.PIPE)
         except:
             self.update_console.emit("CTL: error starting continous mp3 recording.")
             exit(-1)
