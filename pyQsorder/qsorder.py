@@ -635,7 +635,8 @@ class recording_loop(QThread):
         else:
             try:
                 def_index = self.p.get_default_input_device_info()
-                msg = "Input Device: " +  str(def_index['index']) + " " + str(def_index['name'])
+                # msg = "Input Device: " +  str(def_index['index']) + " " + str(def_index['name'])
+                msg = "Input Device: " +  str(def_index['index']) + " " + def_index['name'].encode('utf-8')
                 self.update_console.emit(msg)
                 self.input = def_index['name']
                 DEVINDEX = def_index['index']
