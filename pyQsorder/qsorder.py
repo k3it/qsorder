@@ -437,7 +437,14 @@ class recording_loop(QThread):
             if (self.options.debug):
                 logging.debug(command)
 
-            output = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE).communicate()[0]
+            startupinfo = None
+            if platform.system() == 'Windows':
+                import _subprocess  # @bug with python 2.7 ?
+                startupinfo = subprocess.STARTUPINFO()
+                startupinfo.dwFlags |= _subprocess.STARTF_USESHOWWINDOW
+                startupinfo.wShowWindow = _subprocess.SW_HIDE
+
+            output = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE, startupinfo=startupinfo).communicate()[0]
             gain = re.search('\S*Replay.+', output)
 
             msg =  "WAV: " + datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S") + " " + BASENAME[:20] \
