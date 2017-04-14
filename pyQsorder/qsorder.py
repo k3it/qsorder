@@ -41,7 +41,7 @@ from PySide.QtGui import *
 from PySide.QtUiTools import *
 from PySide import QtXml
 
-from qgui import *
+from .qgui import *
 
 import dropbox
 
@@ -92,7 +92,7 @@ class wave_file:
                             os.makedirs(self.contest_dir)
                     self.w = wave.open(self.wavfile, 'wb')
                 except:
-                    print "unable to open WAV file for writing"
+                    print("unable to open WAV file for writing")
                     sys.exit()
                 # 16 bit complex samples
                 # self.w.setparams((2, 2, samp_rate, 1, 'NONE', 'not compressed'))
@@ -163,8 +163,8 @@ class qsorder(object):
         self.inputs = {}
         self.selected_input = None
         if (self.options.query_inputs):
-            print "\nDevice index Description"
-            print "------------ -----------"
+            print("\nDevice index Description")
+            print("------------ -----------")
         for i in range(max_devs):
             p = pyaudio.PyAudio()
             devinfo = self.p.get_device_info_by_index(i)
@@ -176,7 +176,7 @@ class qsorder(object):
                                              input_channels=devinfo['maxInputChannels'],
                                              input_format=pyaudio.paInt16):
                         if (self.options.query_inputs):
-                            print "\t", i, "\t", devinfo['name'].encode('unicode_escape')
+                            print("\t", i, "\t", devinfo['name'].encode('unicode_escape'))
                         else:
                             self.inputs[devinfo['name']] = i
                             if (i == self.options.device_index):
@@ -203,7 +203,7 @@ class qsorder(object):
         self.qsorder = qsorderApp(self.options)
         
         #populate inputs comnbobox
-        self.qsorder.ui.inputs.addItems(self.inputs.keys())
+        self.qsorder.ui.inputs.addItems(list(self.inputs.keys()))
         if (self.selected_input):
             idx = self.qsorder.ui.inputs.findText(self.selected_input)
             self.qsorder.ui.inputs.setCurrentIndex(idx)
@@ -357,7 +357,7 @@ class qsorder(object):
         s.sendto(udp_packet, ('<broadcast>', MYPORT))
         s.close()
         if not self.thread.wait(2000):
-            print "Tired of waiting, killing thread"
+            print("Tired of waiting, killing thread")
             self.thread.terminate()
             self.thread.wait(500)
 
@@ -375,7 +375,7 @@ class test_thread(QThread):
         while self._isRunning:
             self.update_console.emit("thread running")
             time.sleep(1)
-        print "Quiting thread.."
+        print("Quiting thread..")
 
     def quit(self):
         self._isRunning = False
@@ -731,7 +731,7 @@ class recording_loop(QThread):
                 check_sum = binascii.crc32(udp_data)
                 try:
                     dom = parseString(udp_data)
-                except xml.parsers.expat.ExpatError, e:
+                except xml.parsers.expat.ExpatError as e:
                     pass
 
                 if (udp_data == "qsorder_exit_loop_DEADBEEF" or self._isRunning == False):

@@ -4,9 +4,9 @@ from PySide.QtUiTools import *
 import os
 import webbrowser
 
-from _winreg import *
+from winreg import *
 
-import qsorder_ui
+from . import qsorder_ui
 
 # import pyqtgraph as pg
 
