@@ -36,12 +36,14 @@ from socket import *
 from xml.dom.minidom import parseString
 import xml.parsers.expat
 
-from PySide.QtCore import * 
-from PySide.QtGui import *
-from PySide.QtUiTools import *
-from PySide import QtXml
+from PyQt5.QtCore import * 
+from PyQt5.QtGui import *
+# from PyQt5.QtUiTools import *
+from PyQt5 import QtXml
 
-from .qgui import *
+# from PyQt5 import *
+
+from qgui import *
 
 import dropbox
 
@@ -201,6 +203,7 @@ class qsorder(object):
         
         app = QApplication(sys.argv)
         self.qsorder = qsorderApp(self.options)
+        # self.qsorder = qgui.qsorderApp(self.options)
         
         #populate inputs comnbobox
         self.qsorder.ui.inputs.addItems(list(self.inputs.keys()))
@@ -302,7 +305,8 @@ class qsorder(object):
         if self.thread.isRunning():
             palette.setColor(QPalette.Foreground,Qt.blue)
             self.qsorder.ui.label_status.setPalette(palette)
-            msg = "Running, " +  str(self.thread._get_free_space_mb(self.options.path)/1024) + " GB free"
+            freegb = self.thread._get_free_space_mb(self.options.path)/1024.0
+            msg = "Running, %.2f GB free" % freegb
             self.qsorder.ui.label_status.setText(msg)
             self.qsorder.ui.label_input.setText(self.thread.input)
             self.qsorder.ui.label_port.setText(str(self.options.port))
@@ -353,7 +357,7 @@ class qsorder(object):
         s = socket(AF_INET, SOCK_DGRAM)
         s.bind(('', 0))
         s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
-        udp_packet = "qsorder_exit_loop_DEADBEEF"
+        udp_packet = b'qsorder_exit_loop_DEADBEEF'
         s.sendto(udp_packet, ('<broadcast>', MYPORT))
         s.close()
         if not self.thread.wait(2000):
@@ -364,7 +368,7 @@ class qsorder(object):
 
 class test_thread(QThread):
     
-    update_console = Signal(str)
+    update_console = pyqtSignal(str)
 
     def __init__(self,options):
         super(test_thread, self).__init__()
@@ -386,8 +390,8 @@ class recording_loop(QThread):
     '''
     main recording class
     '''
-    update_console = Signal(str)
-    upload_to_dropbox = Signal(str)
+    update_console = pyqtSignal(str)
+    upload_to_dropbox = pyqtSignal(str)
 
     def __init__(self, options):
         super(recording_loop, self).__init__()
@@ -439,10 +443,10 @@ class recording_loop(QThread):
 
             startupinfo = None
             if platform.system() == 'Windows':
-                import _subprocess  # @bug with python 2.7 ?
+                # import _subprocess  # @bug with python 2.7 ?
                 startupinfo = subprocess.STARTUPINFO()
-                startupinfo.dwFlags |= _subprocess.STARTF_USESHOWWINDOW
-                startupinfo.wShowWindow = _subprocess.SW_HIDE
+                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                startupinfo.wShowWindow = subprocess.SW_HIDE
 
             output = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE, startupinfo=startupinfo).communicate()[0]
             gain = re.search('\S*Replay.+', output)
@@ -523,7 +527,8 @@ class recording_loop(QThread):
             exit(-1)
 
         self.update_console.emit("CTL: " + str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + "Z started new .mp3 file: " + filename)
-        self.update_console.emit("CTL: Disk free space: " +  str(self._get_free_space_mb(contest_dir)/1024) +  "GB")
+        freegb = self._get_free_space_mb(contest_dir)/1024.0
+        self.update_console.emit("CTL: Disk free space: %.2f GB" % freegb )
         if self._get_free_space_mb(contest_dir) < 100:
             self.update_console.emit("CTL: WARNING: Low Disk space")
         return mp3handle,filename
@@ -738,7 +743,7 @@ class recording_loop(QThread):
                     logging.debug("Received Exit magic signal")
                     if 'mp3' in locals():
                         mp3_stop.set()
-                        time.sleep(10)
+                        time.sleep(0.1)
                     break
 
 

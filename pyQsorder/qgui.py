@@ -1,12 +1,17 @@
-from PySide.QtCore import * 
-from PySide.QtGui import *
-from PySide.QtUiTools import *
+# from PySide.QtCore import * 
+# from PySide.QtGui import *
+# from PySide.QtUiTools import *
+
+from PyQt5 import  QtCore, QtGui, uic
+from PyQt5.QtWidgets import QApplication, QWidget
+
 import os
 import webbrowser
 
 from winreg import *
 
-from . import qsorder_ui
+import qsorder_ui
+
 
 # import pyqtgraph as pg
 
@@ -32,6 +37,9 @@ class qsorderApp(QWidget):
         # self.ui = self.loader.load(uifile, self)
         
         self.ui = qsorder_ui.Ui_Form()
+        # self.ui = uic.loadUi("qsorder.ui")
+        # self.ui.show()
+
         self.ui.setupUi(self)
 
 
@@ -56,7 +64,7 @@ class qsorderApp(QWidget):
         # self.layout.addWidget(self.plot, 0, 1, 3, 2)  # plot goes on right side, spanning 3 rows
         # self.layout.addWidget(self.stopbtn, 0, 0)   # button goes in upper-left
 
-        self.ui.quitButton.clicked.connect(QCoreApplication.instance().quit)
+        self.ui.quitButton.clicked.connect(QtCore.QCoreApplication.instance().quit)
         self.ui.getDropbox_btn.clicked.connect(self._register)
 
         # process arguments
