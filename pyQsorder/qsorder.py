@@ -357,8 +357,8 @@ class qsorder(object):
         s = socket(AF_INET, SOCK_DGRAM)
         s.bind(('', 0))
         s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
-        udp_packet = b'qsorder_exit_loop_DEADBEEF'
-        s.sendto(udp_packet, ('<broadcast>', MYPORT))
+        udp_packet = 'qsorder_exit_loop_DEADBEEF'
+        s.sendto(udp_packet.encode(), ('<broadcast>', MYPORT))
         s.close()
         if not self.thread.wait(2000):
             print("Tired of waiting, killing thread")
@@ -449,7 +449,7 @@ class recording_loop(QThread):
                 startupinfo.wShowWindow = subprocess.SW_HIDE
 
             output = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE, startupinfo=startupinfo).communicate()[0]
-            gain = re.search('\S*Replay.+', output)
+            gain = re.search('\S*Replay.+', output.decode())
 
             msg =  "WAV: " + datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S") + " " + BASENAME[:20] \
                 + ".." + str(freq) + "Mhz.mp3 " + gain.group(0)
@@ -606,7 +606,7 @@ class recording_loop(QThread):
 
 
         self.update_console.emit("--------------------------------------")
-        self.update_console.emit("v3.0 QSO Recorder for N1MM, 2016 K3IT")
+        self.update_console.emit("QSO Recorder for N1MM v" + __version__ + ", 2017 K3IT")
         self.update_console.emit("--------------------------------------")
 
         if platform.system() == 'Windows':
@@ -724,6 +724,7 @@ class recording_loop(QThread):
         s = socket(AF_INET, SOCK_DGRAM)
         s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
         s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        s.setsockopt(SOL_SOCKET, SO_RCVBUF, 1)
         try:
                 s.bind(('', MYPORT))
         except:
@@ -734,6 +735,7 @@ class recording_loop(QThread):
             try:
                 udp_data = s.recv(2048)
                 check_sum = binascii.crc32(udp_data)
+                udp_data = udp_data.decode()
                 try:
                     dom = parseString(udp_data)
                 except xml.parsers.expat.ExpatError as e:
@@ -743,7 +745,7 @@ class recording_loop(QThread):
                     logging.debug("Received Exit magic signal")
                     if 'mp3' in locals():
                         mp3_stop.set()
-                        time.sleep(0.1)
+                        time.sleep(0.2)
                     break
 
 
@@ -786,9 +788,9 @@ class recording_loop(QThread):
                                     + freq + " --- ignoring from stn" +  str(station))
                                 continue
 
-                        # skip packet if QSO was more than DELAY seconds ago
+                        # skip packet if QSO was more than options.buffer_length-DELAY seconds ago
                         t_delta = (now - timestamp).total_seconds()
-                        if (t_delta > DELAY):
+                        if (t_delta > self.options.buffer_length - DELAY):
                             self.update_console.emit("---: " +  timestamp.strftime("%m-%d %H:%M:%S") + call + " " 
                                 + freq + " --- ignoring " + str(t_delta) + " sec old QSO. Check clock settings?")
                             continue
@@ -800,7 +802,12 @@ class recording_loop(QThread):
 
                         calls = call + "_de_" + mycall
 
-                        t = threading.Timer(DELAY, self._dump_audio, [calls, contest, mode, freq, timestamp, radio_nr, self.sampwidth])
+
+                        # take into account UDP buffer delay
+                        if (t_delta > DELAY):
+                            t_delta = DELAY
+
+                        t = threading.Timer(DELAY - t_delta, self._dump_audio, [calls, contest, mode, freq, timestamp, radio_nr, self.sampwidth])
                         self.update_console.emit("QSO: " + timestamp.strftime("%m-%d %H:%M:%S") + " " + call + " " + freq)
                         t.start()
                         self.qsos_in_queue += 1
