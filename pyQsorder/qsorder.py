@@ -293,7 +293,7 @@ class qsorder(object):
             # file = file.replace(self.options.path, '')
             # file = file.replace('\\', '/')
             try:
-                with open(file) as f:
+                with open(file, "rb") as f:
                     self.client.files_upload(f.read(), file.replace(self.options.path, ''), mute=True)
                     self._update_text("WAV: Uploaded %s\n" % file.replace(self.options.path, ''))
             except Exception as err:
@@ -516,10 +516,9 @@ class recording_loop(QThread):
         try:
             startupinfo = None
             if platform.system() == 'Windows':
-                import _subprocess  # @bug with python 2.7 ?
                 startupinfo = subprocess.STARTUPINFO()
-                startupinfo.dwFlags |= _subprocess.STARTF_USESHOWWINDOW
-                startupinfo.wShowWindow = _subprocess.SW_HIDE
+                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                startupinfo.wShowWindow = subprocess.SW_HIDE
 
             mp3handle = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE, startupinfo=startupinfo, stdin=subprocess.PIPE)
         except:
