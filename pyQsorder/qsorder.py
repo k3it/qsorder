@@ -38,6 +38,7 @@ import xml.parsers.expat
 
 from PyQt5.QtCore import * 
 from PyQt5.QtGui import *
+from PyQt5.QtWidgets import QFileDialog
 # from PyQt5.QtUiTools import *
 from PyQt5 import QtXml
 
