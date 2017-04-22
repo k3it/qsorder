@@ -608,6 +608,7 @@ class recording_loop(QThread):
         self.update_console.emit("--------------------------------------")
         self.update_console.emit("QSO Recorder for N1MM v" + __version__ + ", 2017 K3IT")
         self.update_console.emit("--------------------------------------")
+        self.update_console.emit(datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"))
 
         if platform.system() == 'Windows':
             self.lame_path = self._which('lame.exe')
@@ -655,7 +656,8 @@ class recording_loop(QThread):
             try:
                 def_index = self.p.get_default_input_device_info()
                 # msg = "Input Device: " +  str(def_index['index']) + " " + str(def_index['name'])
-                msg = "Input Device: " +  str(def_index['index']) + " " + def_index['name'].encode('utf-8')
+                dev_name = def_index['name'] #.encode('utf-8')
+                msg = "Input Device: " + dev_name
                 self.update_console.emit(msg)
                 self.input = def_index['name']
                 DEVINDEX = def_index['index']
@@ -698,10 +700,8 @@ class recording_loop(QThread):
 
         self.sampwidth = self.p.get_sample_size(FORMAT)
 
-
-        self.update_console.emit("* recording " + str(CHANNELS) + "ch, " 
-            + str(dqlength * CHUNK / RATE) + " secs audio buffer, Delay:" + str(DELAY) + " secs")
-        self.update_console.emit("Output directory: " + self.options.path + "\\<contest...>")
+        self.update_console.emit("* recording %d ch, %d secs audio buffer, Delay: %d secs" % (CHANNELS, dqlength * CHUNK / RATE,  DELAY))
+        self.update_console.emit("Output directory: " + self.options.path.replace('\\', '/') + "/<contest...>")
         self.update_console.emit("Hotkey: CTRL+ALT+" + HOTKEY)
         if (self.options.station_nr > 0):
             self.update_console.emit("Recording only station " + str(self.options.station_nr) + "QSOs")
