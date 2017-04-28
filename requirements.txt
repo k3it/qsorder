@@ -1,2 +1,5 @@
-pyaudio
+dropbox
+PyAudio
+PyQt5
 python-dateutil
+urllib3
