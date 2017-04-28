@@ -188,23 +188,25 @@ class qsorder(object):
                     print("uknown chardets in sound input name.")
                     pass
 
+        if (self.options.query_inputs):
+            exit(0)
+
+        app = QApplication(sys.argv)
+        self.qsorder = qsorderApp(self.options)
+        # self.qsorder = qgui.qsorderApp(self.options)
+
         #find the default input 
         if not self.options.device_index:
             try:
                 def_index = self.p.get_default_input_device_info()
                 self.selected_input = def_index['name']
             except IOError as e:
-                self.update_console.emit("No Default innput device: %s" % e[0])
+                self._update_text(e.strerror)
 
         self.p.terminate()
-        if (self.options.query_inputs):
-            exit(0)
 
 
         
-        app = QApplication(sys.argv)
-        self.qsorder = qsorderApp(self.options)
-        # self.qsorder = qgui.qsorderApp(self.options)
         
         #populate inputs comnbobox
         self.qsorder.ui.inputs.addItems(list(self.inputs.keys()))
@@ -303,7 +305,7 @@ class qsorder(object):
 
     def _update_status(self):
         palette = QPalette()
-        if self.thread.isRunning():
+        if (hasattr(self, 'thread') and self.thread.isRunning()):
             palette.setColor(QPalette.Foreground,Qt.blue)
             self.qsorder.ui.label_status.setPalette(palette)
             freegb = self.thread._get_free_space_mb(self.options.path)/1024.0
@@ -361,7 +363,7 @@ class qsorder(object):
         udp_packet = 'qsorder_exit_loop_DEADBEEF'
         s.sendto(udp_packet.encode(), ('<broadcast>', MYPORT))
         s.close()
-        if not self.thread.wait(2000):
+        if (hasattr(self, 'thread') and not self.thread.wait(2000)):
             print("Tired of waiting, killing thread")
             self.thread.terminate()
             self.thread.wait(500)
