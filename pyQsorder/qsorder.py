@@ -44,7 +44,8 @@ from PyQt5 import QtXml
 
 # from PyQt5 import *
 
-from qgui import *
+from .qgui import *
+
 
 import dropbox
 

@@ -35,10 +35,14 @@ class simpleUDPBcast(object):
 		sleep(1)
 
 		# data = repr(time.time()) + '\n'
+		try:
+			udp_packet = udp_packet.encode()
+		except:
+			pass
 		s.sendto(udp_packet, ('<broadcast>', MYPORT))
 		sleep(delay_before_exit)
 		udp_packet = "qsorder_exit_loop_DEADBEEF"
-		s.sendto(udp_packet, ('<broadcast>', MYPORT))
+		s.sendto(udp_packet.encode(), ('<broadcast>', MYPORT))
 
 
 
@@ -52,7 +56,7 @@ class checkUDPparsing(object):
 		else:
 			argslist = ['-P ' + str(MYPORT)]
 
-		qsorder.main(argslist)
+		qsorder.qsorder(argslist)
 		 
 	def get_output(self):
 		return sys.stdout.getvalue()
@@ -64,7 +68,7 @@ class ModTest(unittest.TestCase):
 	def testCheckExit(self):
 		argslist = ['-h']
 		with self.assertRaises(SystemExit):
-			qsorder.main(argslist=argslist)
+			qsorder.qsorder(argslist=argslist)
 		verification_output = "show this help message and exit"
 		self.assertIn(verification_output, sys.stdout.getvalue())
 
@@ -72,7 +76,7 @@ class ModTest(unittest.TestCase):
 	def testIndex(self):
 		with self.assertRaises(SystemExit):
 			argslist = ['-q']
-			qsorder.main(argslist)
+			qsorder.qsorder(argslist)
 		verification_output = "Device index Description"
 		self.assertIn(verification_output, sys.stdout.getvalue())
 

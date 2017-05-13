@@ -10,7 +10,7 @@ import webbrowser
 
 from winreg import *
 
-import qsorder_ui
+from . import qsorder_ui
 
 
 # import pyqtgraph as pg

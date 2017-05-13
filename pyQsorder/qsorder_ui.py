@@ -362,4 +362,4 @@ class Ui_Form(object):
         self.selectDir_btn.setText(_translate("Form", "..."))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.config_tab), _translate("Form", "Configuration"))
 
-import bkg_img_rc
+from . import bkg_img_rc
