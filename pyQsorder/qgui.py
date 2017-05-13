@@ -8,7 +8,11 @@ from PyQt5.QtWidgets import QApplication, QWidget
 import os
 import webbrowser
 
-from winreg import *
+try:
+    from winreg import *
+except:
+    # non-windows platform
+    pass
 
 from . import qsorder_ui
 
@@ -75,7 +79,6 @@ class qsorderApp(QWidget):
 
         if self.options.path:
             self.ui.path.setText(self.options.path)
-        else:
             try:
                 aReg = ConnectRegistry(None,HKEY_CURRENT_USER)
                 key = OpenKey(aReg, r"Software\N1MM Logger+")
