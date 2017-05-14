@@ -98,7 +98,7 @@ class wave_file:
                 # get ready to write wave file
                 try:
                     if not os.path.exists(self.contest_dir):
-                            os.makedirs(self.contest_dir)
+                        os.makedirs(self.contest_dir)
                     self.w = wave.open(self.wavfile, 'wb')
                 except:
                     print("unable to open WAV file for writing")
@@ -781,7 +781,8 @@ class recording_loop(QThread):
                     pass
 
                 if ("qsorder_exit_loop_DEADBEEF" in udp_data or self._isRunning == False):
-                    logging.debug("Received Exit magic signal")
+                    msg=("Received Exit magic signal")
+                    self.update_console.emit(msg); print(msg); logging.debug(msg)
                     if 'mp3' in locals():
                         mp3_stop.set()
                         time.sleep(0.2)

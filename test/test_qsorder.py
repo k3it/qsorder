@@ -40,6 +40,7 @@ class simpleUDPBcast(object):
 		except:
 			pass
 		s.sendto(udp_packet, ('<broadcast>', MYPORT))
+
 		sleep(delay_before_exit)
 		udp_packet = "test_qsorder_exit_loop_DEADBEEF"
 		s.sendto(udp_packet.encode(), ('<broadcast>', MYPORT))
@@ -55,9 +56,8 @@ class checkUDPparsing(object):
 			argslist.append('-P ' + str(MYPORT))
 		else:
 			argslist = ['-P ' + str(MYPORT)]
-
 		qsorder.qsorder(argslist)
-		 
+
 	def get_output(self):
 		return sys.stdout.getvalue()
 
@@ -97,57 +97,61 @@ class ModTest(unittest.TestCase):
 			udp_packet = ET.tostring(data)
 			output = checkUDPparsing(udp_packet).get_output()
 		verification_output = "Exit"
-		self.assertIn(verification_output, output)
+		self.assertIn(verification_output, sys.stdout.getvalue())
 
 	
 	def test_old_qso(self):
 		'''
 		Should ignore QSOs in the "past"
 		'''
-		data = ET.parse("test/udp-test-packet.xml").getroot()
-		udp_packet = ET.tostring(data)
-		output = checkUDPparsing(udp_packet).get_output()
+		with self.assertRaises(SystemExit):
+			data = ET.parse("test/udp-test-packet.xml").getroot()
+			udp_packet = ET.tostring(data)
+			output = checkUDPparsing(udp_packet).get_output()
 		verification_output = "ignoring"
-		self.assertIn(verification_output, output)
+		self.assertIn(verification_output, sys.stdout.getvalue())
 
 	def test_future_qso(self):
 		'''
 		Should ignore QSOs in the "future"
 		'''
-		data = ET.parse("test/udp-test-packet.xml").getroot()
-		now = datetime.datetime.utcnow()
-		now += datetime.timedelta(1)
-		argslist = ['-d 3']
+		with self.assertRaises(SystemExit):
+			data = ET.parse("test/udp-test-packet.xml").getroot()
+			now = datetime.datetime.utcnow()
+			now += datetime.timedelta(1)
+			argslist = ['-d 3']
 
-		data.find('timestamp').text = now.strftime("%Y-%m-%d %H:%M:%S")
-		udp_packet = ET.tostring(data)
-		output = checkUDPparsing(udp_packet,argslist=argslist).get_output()
+			data.find('timestamp').text = now.strftime("%Y-%m-%d %H:%M:%S")
+			udp_packet = ET.tostring(data)
+			output = checkUDPparsing(udp_packet,argslist=argslist).get_output()
 		verification_output = "ignoring"
-		self.assertIn(verification_output, output)
+		self.assertIn(verification_output, sys.stdout.getvalue())
 
 	def test_qso(self):
 		'''
 		save a basic QSO
 		'''
-		data = ET.parse("test/udp-test-packet.xml").getroot()
-		now = datetime.datetime.utcnow()
-		now += datetime.timedelta(0,3)
+		with self.assertRaises(SystemExit):
+			data = ET.parse("test/udp-test-packet.xml").getroot()
+			now = datetime.datetime.utcnow()
+			now += datetime.timedelta(0,3)
 
-		argslist = ['-d 2']
+			argslist = ['-d 2']
 
-		data.find('timestamp').text = now.strftime("%Y-%m-%d %H:%M:%S")
-		udp_packet = ET.tostring(data)
-		output = checkUDPparsing(udp_packet,argslist=argslist,delay_before_exit=3).get_output()
+			data.find('timestamp').text = now.strftime("%Y-%m-%d %H:%M:%S")
+			udp_packet = ET.tostring(data)
+			output = checkUDPparsing(udp_packet,argslist=argslist,delay_before_exit=5).get_output()
 		verification_output = "WAV:"
-		self.assertIn(verification_output, output)
+		self.assertIn(verification_output, sys.stdout.getvalue())
 		# check for mp3 conversion also
 		verification_output = "ReplayGain:"
-		self.assertIn(verification_output, output)
+		self.assertIn(verification_output, sys.stdout.getvalue())
 
 	def testContinous(self):
 		# with self.assertRaises(SystemExit):
-		argslist = ['-C']
-		output = checkUDPparsing("None",argslist=argslist).get_output()
+		with self.assertRaises(SystemExit):
+			argslist = ['-C']
+			output = checkUDPparsing("None",argslist=argslist).get_output()
 		verification_output = "started new .mp3 file:"
 		self.assertIn(verification_output, sys.stdout.getvalue())
 		verification_output = "Disk free space:"

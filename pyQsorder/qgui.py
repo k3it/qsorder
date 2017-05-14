@@ -82,6 +82,7 @@ class qsorderApp(QWidget):
 
         if self.options.path:
             self.ui.path.setText(self.options.path)
+        else:
             try:
                 aReg = ConnectRegistry(None,HKEY_CURRENT_USER)
                 key = OpenKey(aReg, r"Software\N1MM Logger+")
