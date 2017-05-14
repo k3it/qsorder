@@ -41,7 +41,7 @@ class simpleUDPBcast(object):
 			pass
 		s.sendto(udp_packet, ('<broadcast>', MYPORT))
 		sleep(delay_before_exit)
-		udp_packet = "qsorder_exit_loop_DEADBEEF"
+		udp_packet = "test_qsorder_exit_loop_DEADBEEF"
 		s.sendto(udp_packet.encode(), ('<broadcast>', MYPORT))
 
 
@@ -81,18 +81,21 @@ class ModTest(unittest.TestCase):
 		self.assertIn(verification_output, sys.stdout.getvalue())
 
 	def testDelay(self):
-		# with self.assertRaises(SystemExit):
-		argslist = ['-d 2', '-i 0', '-D']
-		output = checkUDPparsing("None",argslist=argslist).get_output()
+		with self.assertRaises(SystemExit):
+			argslist = ['-d 2', '-i 0', '-D']
+			output = checkUDPparsing("None",argslist=argslist).get_output()
 		verification_output = "Delay: 2 secs"
 		self.assertIn(verification_output, sys.stdout.getvalue())
+		# with self.assertLogs(level='DEBUG') as cm:
+		# 	self.assertIn(verification_output, cm.output)
 
 
 	def test_corrupted_udp(self):
-		data = ET.parse("test/udp-test-packet.xml").getroot()
-		data.find('timestamp').text = "blah"
-		udp_packet = ET.tostring(data)
-		output = checkUDPparsing(udp_packet).get_output()
+		with self.assertRaises(SystemExit):
+			data = ET.parse("test/udp-test-packet.xml").getroot()
+			data.find('timestamp').text = "blah"
+			udp_packet = ET.tostring(data)
+			output = checkUDPparsing(udp_packet).get_output()
 		verification_output = "Exit"
 		self.assertIn(verification_output, output)
 

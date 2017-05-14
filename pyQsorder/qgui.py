@@ -14,7 +14,10 @@ except:
     # non-windows platform
     pass
 
-from . import qsorder_ui
+try:
+    from . import qsorder_ui
+except:
+    import qsorder_ui
 
 
 # import pyqtgraph as pg
