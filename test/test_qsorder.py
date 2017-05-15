@@ -32,7 +32,7 @@ class simpleUDPBcast(object):
 		s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
 
 		# wait for qsorder to start
-		sleep(1)
+		sleep(3)
 
 		# data = repr(time.time()) + '\n'
 		try:
@@ -61,9 +61,25 @@ class checkUDPparsing(object):
 	def get_output(self):
 		return sys.stdout.getvalue()
 
-
-
 class ModTest(unittest.TestCase):
+
+	def testDropboxConnect(self):
+		try:
+			drop_key = os.environ['DROP_KEY']
+		except:
+			drop_key = 'foo'
+
+		with self.assertRaises(SystemExit):
+			argslist = ['-u ' + drop_key, '-d 2']
+			data = ET.parse("test/udp-test-packet.xml").getroot()
+			now = datetime.datetime.utcnow()
+			now += datetime.timedelta(0,3)
+			data.find('timestamp').text = now.strftime("%Y-%m-%d %H:%M:%S")
+			data.find('call').text = "TE5T"
+			udp_packet = ET.tostring(data)
+			output = checkUDPparsing(udp_packet,argslist=argslist,delay_before_exit=7).get_output()
+		verification_output = "WAV: Uploaded"
+		self.assertIn(verification_output, sys.stdout.getvalue())
 
 	def testCheckExit(self):
 		argslist = ['-h']
