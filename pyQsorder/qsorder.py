@@ -269,7 +269,8 @@ class qsorder(object):
         try:
             self.options.device_index  = self.inputs[self.qsorder.ui.inputs.currentText()]
         except KeyError as e:
-            self._update_text("Invalid Input device index: %s" % self.options.device_index)
+            msg = ("Invalid Input device index: %s" % self.options.device_index)
+            self._update_text(msg); logging.debug(msg); print(msg)
             return
 
 
@@ -304,9 +305,11 @@ class qsorder(object):
             try:
                 with open(file, "rb") as f:
                     self.client.files_upload(f.read(), file.replace(self.options.path, ''), mute=True)
-                    self._update_text("WAV: Uploaded %s\n" % file.replace(self.options.path, ''))
+                    msg = ("WAV: Uploaded %s\n" % file.replace(self.options.path, ''))
+                    self._update_text(msg); logging.debug(msg); print(msg)
             except Exception as err:
-                self._update_text("ERR: Failed to upload %s\n%s" % (file.replace(self.options.path, ''), err))
+                msg = ("ERR: Failed to upload %s\n%s" % (file.replace(self.options.path, ''), err))
+                self._update_text(msg); logging.debug(msg); print(msg)
 
 
     def _update_status(self):
