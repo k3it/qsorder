@@ -14,7 +14,7 @@ from socket import *
 import threading
 
 import xml.etree.cElementTree as ET
-import datetime
+import datetime, os
 
 
 MYPORT = 50000
@@ -62,13 +62,10 @@ class checkUDPparsing(object):
 		return sys.stdout.getvalue()
 
 class ModTest(unittest.TestCase):
+	
 
 	def testDropboxConnect(self):
-		try:
-			drop_key = os.environ['DROP_KEY']
-		except:
-			drop_key = 'foo'
-
+		drop_key = os.environ['DROP_KEY']
 		logging.debug("drop key: " + drop_key[-3:])
 
 		with self.assertRaises(SystemExit):
