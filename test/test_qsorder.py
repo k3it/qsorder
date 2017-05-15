@@ -69,7 +69,7 @@ class ModTest(unittest.TestCase):
 		except:
 			drop_key = 'foo'
 
-		print(drop_key[-3:])
+		logging.debug("drop key: " + drop_key[-3:])
 
 		with self.assertRaises(SystemExit):
 			argslist = ['-u' + drop_key, '-d 2']
