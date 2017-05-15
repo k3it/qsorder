@@ -69,6 +69,8 @@ class ModTest(unittest.TestCase):
 		except:
 			drop_key = 'foo'
 
+		print(drop_key[-3:])
+
 		with self.assertRaises(SystemExit):
 			argslist = ['-u' + drop_key, '-d 2']
 			now = datetime.datetime.utcnow()
