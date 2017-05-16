@@ -2,6 +2,8 @@ language: python
 sudo: required
 python:
 - '3.5'
+- '3.6'
+- '3.7'
 before_install:
 - sudo apt-get update -qq
 - sudo usermod -a -G audio travis
