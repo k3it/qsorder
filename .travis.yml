@@ -3,7 +3,6 @@ sudo: required
 python:
 - '3.5'
 - '3.6'
-- '3.7'
 before_install:
 - sudo apt-get update -qq
 - sudo usermod -a -G audio travis
@@ -20,6 +19,7 @@ env:
     secure: OOnvLNCqg66ROXG01Q5EVw99AZpKpv3zxbfBeWOCJQEFl4gfkiuBsvl8TiJoJdapwnD4ezH/E8d2dMV5s2iRPzh0JgRHKfMM/UrMS6FDA78eqg2a4NntaBNt3dkmVb2FMtRrsgkHb05UF3+rdyJFxismdiKPzHwFaL9c5nJmErBG4TwRjXrvErGRNUiQYMlS7kjLADlkXPUrnGQMd5Wj8rZp5zSY5vd48OnnshlxBTNpRJko087WHbj9QN9OH07HhELRHsLPZ7VZ/tSpjK2M2aAA89jK1pH4bTPwPDpkjDzo4j3s9LTaKkErJJwun/GS+/WWRM5TugXz4wzVo0oB8KOtNalOz+m0jndgD93Ub6oQtU4g/eWFXzNo7e9Js209wJLR+PZ8jL+pdiSLWbGVuiSrLLTTOBo1SmNhWW/+lUu4JGoB5zw4MTSZ8ClF4H9e3SckjNOaFlpXEutQFlpcpTJo6tcE8RtyRIPCRDdZMRWlxiPFTTIWK1K10t/YTBnEDyqtCQXO1JIL4rC0if2ln/UkpIoy0Tp9lWfyfTscmtY3uTSD6JPuage3A+j7d7zagjvRtHKvg7eJ4HzPGuHwmdHJBrCCaletYiIG5p9cmvHu44HakCENQShyuqfTl16HX8+mf/OXxj7IKgZtiPRRYjF00m4uAt85R+D3pWVWoOM=
 before_script:
 - export DISPLAY=:99.0
+- mkdir tmp
 - sh -e /etc/init.d/xvfb start
 - sleep 3
 script:
