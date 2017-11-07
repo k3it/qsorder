@@ -1,5 +1,6 @@
 v2.10
  - add radio_nr flag. records qso's only from a specified Radio NR
+ - build binary with cx_freeze and 7z instead of pyinstaller
 
 v2.9
  - minor bug fixes
