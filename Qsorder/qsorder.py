@@ -366,7 +366,7 @@ def main(argslist=None):
                 except ValueError:
                     pass
             p.terminate()
-        exit(0)
+        sys.exit(0)
 
 
     if (options.device_index):
@@ -549,7 +549,7 @@ def main(argslist=None):
             stream.stop_stream()
             stream.close()
             p.terminate()
-            exit(0)
+            sys.exit(0)
 
 
     #
