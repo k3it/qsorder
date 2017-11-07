@@ -1,3 +1,11 @@
+v2.10
+ - add radio_nr flag. records qso's only from a specified Radio NR
+
+v2.9
+ - minor bug fixes
+ - restructured code in prep for the qtgui version
+ - xml parsing exception handling
+
 v2.8
  - uninterrupted recording mode (with the -C or "--continuous" flag), parrallel to recording of individual QSOs
    hourly audio files are saved in the AUDIO_YEAR directory, a new mp3 file is created at the top of each hour.
