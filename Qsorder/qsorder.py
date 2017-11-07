@@ -4,7 +4,7 @@
 # qsorder - A contest QSO recorder
 # Title: qsorder.py
 # Author: k3it
-# Generated: Thu, Nov 17 2016
+# Generated: Mon, Nov 6 2017
 # Version: 2.10
 ##################################################
 
@@ -341,7 +341,7 @@ def main(argslist=None):
 
 
     print("--------------------------------------")
-    print "v2.10 QSO Recorder for N1MM, 2016 K3IT\n"
+    print "v2.10 QSO Recorder for N1MM, 2017 K3IT\n"
     print("--------------------------------------")
 
     # global p
