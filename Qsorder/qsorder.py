@@ -130,7 +130,14 @@ def dump_audio(call, contest, mode, freq, qso_time, radio_nr, sampwidth):
     w.close_wave()
 
     # try to convert to mp3
-    lame_path = os.path.dirname(os.path.realpath(__file__))
+    if getattr(sys, 'frozen', False):
+        # The application is frozen
+        lame_path = os.path.dirname(sys.executable)
+    else:
+        # The application is not frozen
+        # Change this bit to match where you store your data files:
+        lame_path = os.path.dirname(os.path.realpath(__file__))
+        
     lame_path += "\\lame.exe"
 
     if not os.path.isfile(lame_path):
