@@ -44,7 +44,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 
-import pythoncom, pyHook, ctypes, thread
+import pythoncom, pyHook, ctypes, _thread
 
 class pyhk:
     """Hotkey class extending pyhook"""
@@ -442,7 +442,7 @@ class pyhk:
                      1011: 'Alt',
                      1012: 'Shift'}
         
-        Key2ID = dict(map(lambda x,y: (x,y),ID2Key.values(),ID2Key.keys()))
+        Key2ID = dict(list(map(lambda x,y: (x,y),list(ID2Key.values()),list(ID2Key.keys()))))
         
         return ID2Key, Key2ID
 
@@ -452,13 +452,13 @@ class pyhk:
                                         1001:513,
                                         1002:516,
                                         1003:519}
-        mouseDown_eventMessage2MID = dict(map(lambda x,y: (x,y),mouseDown_MID2eventMessage.values(),mouseDown_MID2eventMessage.keys()))
+        mouseDown_eventMessage2MID = dict(list(map(lambda x,y: (x,y),list(mouseDown_MID2eventMessage.values()),list(mouseDown_MID2eventMessage.keys()))))
 
         mouseUp_MID2eventMessage = {
                                         1001:514,
                                         1002:517,
                                         1003:520}
-        mouseUp_eventMessage2MID = dict(map(lambda x,y: (x,y),mouseUp_MID2eventMessage.values(),mouseUp_MID2eventMessage.keys()))
+        mouseUp_eventMessage2MID = dict(list(map(lambda x,y: (x,y),list(mouseUp_MID2eventMessage.values()),list(mouseUp_MID2eventMessage.keys()))))
 
         return mouseDown_MID2eventMessage, mouseDown_eventMessage2MID, mouseUp_MID2eventMessage, mouseUp_eventMessage2MID        
 
@@ -508,7 +508,7 @@ class pyhk:
         for gR in getRid:
             TempID2Key.pop(gR)
 
-        LTempID2Key = TempID2Key.values()
+        LTempID2Key = list(TempID2Key.values())
 
         return LTempID2Key
         
@@ -549,7 +549,7 @@ class ExecFunThread:
 
     def Start(self):
         self.running = True
-        thread.start_new_thread(self.Run, ())
+        _thread.start_new_thread(self.Run, ())
 
     def IsRunning(self):
         return self.running
@@ -564,21 +564,21 @@ if __name__ == '__main__':
 
     #define test function 
     def funk1():
-        print "Hotkey pressed: Lcontrol 7"    
+        print("Hotkey pressed: Lcontrol 7")    
 
     def funM():
-        print "Mousy"
+        print("Mousy")
 
     def funW():
-        print "Wheel up"
+        print("Wheel up")
 
     def funWin():
-        print win32gui.GetForegroundWindow()
+        print(win32gui.GetForegroundWindow())
 
     #create pyhk class instance    
     hot = pyhk()
 
-    print hot.getHotkeyListNoSingleNoModifiers()
+    print(hot.getHotkeyListNoSingleNoModifiers())
 
     #add hotkey
     id1 = hot.addHotkey(['Ctrl', 'Alt','7'],funk1)

@@ -1,11 +1,12 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 ##################################################
 # qsorder - A contest QSO recorder
 # Title: qsorder.py
 # Author: k3it
-# Generated: Mon, Nov 6 2017
-# Version: 2.10
+# Generated: Mon, Nov 16 2017
+# Version: 2.11
 ##################################################
 
 # qsorder is free software: you can redistribute it and/or modify
@@ -34,7 +35,7 @@ import threading
 import binascii
 
 try:
-    import pyhk
+    from . import pyhk
     nopyhk = False
 except:
     nopyhk = True
@@ -105,7 +106,7 @@ class wave_file:
                             os.makedirs(self.contest_dir)
                     self.w = wave.open(self.wavfile, 'wb')
                 except:
-                    print "unable to open WAV file for writing"
+                    print("unable to open WAV file for writing")
                     sys.exit()
                 # 16 bit complex samples
                 # self.w.setparams((2, 2, samp_rate, 1, 'NONE', 'not compressed'))
@@ -132,11 +133,11 @@ def dump_audio(call, contest, mode, freq, qso_time, radio_nr, sampwidth):
     # try to convert to mp3
     if getattr(sys, 'frozen', False):
         # The application is frozen
-        lame_path = os.path.dirname(sys.executable).decode('utf-8')
+        lame_path = os.path.dirname(sys.executable)
     else:
         # The application is not frozen
         # Change this bit to match where you store your data files:
-        lame_path = os.path.dirname(os.path.realpath(__file__)).decode('utf-8')
+        lame_path = os.path.dirname(os.path.realpath(__file__))
         
     lame_path += "\\lame.exe"
 
@@ -159,20 +160,20 @@ def dump_audio(call, contest, mode, freq, qso_time, radio_nr, sampwidth):
         command.extend(arguments)
 
 
-    try:
-        if (options.debug):
-            logging.debug(command)
+    if (options.debug):
+        logging.debug(command[0].encode('utf-8')) #, command[1:])
 
+    try:
         output = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE).communicate()[0]
-        gain = re.search('\S*Replay.+', output)
-        print "WAV:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), BASENAME[:20] + ".." + str(freq) + "Mhz.mp3", \
-            gain.group(0)
+        gain = re.search('\S*Replay.+', output.decode())
+        print("WAV:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), BASENAME[:20] + ".." + str(freq) + "Mhz.mp3", \
+            gain.group(0))
         os.remove(w.wavfile)
     except:
-        print "could not convert wav to mp3", w.wavfile
+        print("could not convert wav to mp3", w.wavfile)
 
 def manual_dump():
-    print "QSO:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), "HOTKEY pressed"
+    print("QSO:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), "HOTKEY pressed")
     dump_audio("HOTKEY", "AUDIO", "RF", 0, datetime.datetime.utcnow(), 73, 2)
 
 
@@ -233,13 +234,13 @@ def start_new_lame_stream():
     try:
         mp3handle = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
     except:
-        print "CTL error starting mp3 recording.  Exiting.."
+        print("CTL error starting mp3 recording.  Exiting..")
         exit(-1)
 
-    print "CTL:", str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + "Z started new .mp3 file: ", filename
-    print "CTL: Disk free space:", get_free_space_mb(contest_dir)/1024, "GB"
+    print("CTL:", str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + "Z started new .mp3 file: ", filename)
+    print("CTL: Disk free space:", get_free_space_mb(contest_dir)/1024, "GB")
     if get_free_space_mb(contest_dir) < 100:
-        print "CTL: WARNING: Low Disk space"
+        print("CTL: WARNING: Low Disk space")
     return mp3handle,filename
 
 #write continious mp3 stream to disk in a separate worker thread
@@ -270,15 +271,15 @@ def writer():
                 if (end - start > 60000):
                     elapsed = end - start
                     sampling_rate = bytes_written/4/elapsed
-                    print bytes_written, "bytes in ", elapsed, "ms. Sampling rate:", sampling_rate, "kHz"
+                    print(bytes_written, "bytes in ", elapsed, "ms. Sampling rate:", sampling_rate, "kHz")
                     start = end
                     bytes_written=0
                 time.sleep(1)
             if (utcmin != now.minute and now.minute % 10 == 0 and now.minute != 0):
-                print "CTL:", str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + "Z ...recording:", filename
+                print("CTL:", str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + "Z ...recording:", filename)
                 contest_dir = "AUDIO_" + str(now.year)
                 if get_free_space_mb(contest_dir) < 100:
-                    print "CTL: WARNING: Low Disk space"
+                    print("CTL: WARNING: Low Disk space")
                 utcmin = now.minute
 
 def main(argslist=None):
@@ -327,7 +328,7 @@ def main(argslist=None):
         global HOTKEY
         HOTKEY = options.hot_key.upper()
     else:
-        print "Hotkey should be a single character"
+        print("Hotkey should be a single character")
         parser.print_help()
         exit(-1)
 
@@ -348,7 +349,7 @@ def main(argslist=None):
 
 
     print("--------------------------------------")
-    print "v2.10 QSO Recorder for N1MM, 2017 K3IT\n"
+    print("v2.11 QSO Recorder for N1MM, 2017 K3IT\n")
     print("--------------------------------------")
 
     # global p
@@ -356,9 +357,9 @@ def main(argslist=None):
 
     if (options.query_inputs):
         max_devs = p.get_device_count()
-        print "Detected", max_devs, "devices\n"       ################################
-        print "Device index Description"
-        print "------------ -----------"
+        print("Detected", max_devs, "devices\n")       ################################
+        print("Device index Description")
+        print("------------ -----------")
         for i in range(max_devs):
             p = pyaudio.PyAudio()
             devinfo = p.get_device_info_by_index(i)
@@ -369,7 +370,7 @@ def main(argslist=None):
                                              input_device=devinfo['index'],
                                              input_channels=devinfo['maxInputChannels'],
                                              input_format=pyaudio.paInt16):
-                            print "\t", i, "\t", devinfo['name']
+                            print("\t", i, "\t", devinfo['name'])
                 except ValueError:
                     pass
             p.terminate()
@@ -379,20 +380,20 @@ def main(argslist=None):
     if (options.device_index):
         try:
             def_index = p.get_device_info_by_index(options.device_index)
-            print "Input Device :", def_index['name']
+            print("Input Device :", def_index['name'])
             DEVINDEX = options.device_index
         except IOError as e:
-            print("Invalid Input device: %s" % e[0])
+            print(("Invalid Input device: %s" % e[0]))
             p.terminate()
             os._exit(-1)
 
     else:
         try:
             def_index = p.get_default_input_device_info()
-            print "Input Device :", def_index['index'], def_index['name']
+            print("Input Device :", def_index['index'], def_index['name'])
             DEVINDEX = def_index['index']
         except IOError as e:
-            print("No Input devices: %s" % e[0])
+            print(("No Input devices: %s" % e[0]))
             p.terminate()
             os._exit(-1)
 
@@ -406,7 +407,7 @@ def main(argslist=None):
 
 
 
-    print "Listening on UDP port", MYPORT
+    print("Listening on UDP port", MYPORT)
 
 
     # define callback
@@ -430,16 +431,16 @@ def main(argslist=None):
 
     sampwidth = p.get_sample_size(FORMAT)
 
-    print "* recording", CHANNELS, "ch,", dqlength * CHUNK / RATE, "secs audio buffer, Delay:", DELAY, "secs"
-    print "Output directory", os.getcwd() + "\\<contest...>"
+    print("* recording", CHANNELS, "ch,", dqlength * CHUNK / RATE, "secs audio buffer, Delay:", DELAY, "secs")
+    print("Output directory", os.getcwd() + "\\<contest...>")
     if nopyhk:
         print("Hotkey functionality is disabled")
     else:
-        print "Hotkey: CTRL+ALT+" + HOTKEY
-    if (options.station_nr >= 0):
-        print "Recording only station", options.station_nr, "QSOs"
+        print("Hotkey: CTRL+ALT+" + HOTKEY)
+    if (options.station_nr and options.station_nr >= 0):
+        print("Recording only station", options.station_nr, "QSOs")
     if (options.continuous):
-        print "Full contest recording enabled."
+        print("Full contest recording enabled.")
     print("\t--------------------------------\n")
 
 
@@ -459,7 +460,7 @@ def main(argslist=None):
     try:
             s.bind(('', MYPORT))
     except:
-            print "Error connecting to the UDP stream."
+            print("Error connecting to the UDP stream.")
 
 
 
@@ -475,11 +476,11 @@ def main(argslist=None):
             check_sum = binascii.crc32(udp_data)
             try:
                 dom = parseString(udp_data)
-            except xml.parsers.expat.ExpatError, e:
+            except xml.parsers.expat.ExpatError as e:
                 pass
 
             if (udp_data == "qsorder_exit_loop_DEADBEEF"):
-                print "Received magic Exit packet"
+                print("Received magic Exit packet")
                 break
 
 
@@ -516,33 +517,33 @@ def main(argslist=None):
                         timestamp = dateutil.parser.parse(qso_timestamp, dayfirst=True)
 
                     # skip packet if not matching network station number specified in the command line
-                    if (options.station_nr >= 0):
+                    if (options.station_nr and options.station_nr >= 0):
                         if (options.station_nr != int(station)):
-                            print "QSO:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring from stn", station
+                            print("QSO:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring from stn", station)
                             continue
 
                     # skip packet if not matching radio number specified in the command line
-                    if (options.radio_nr >= 0):
+                    if (options.radio_nr and options.radio_nr >= 0):
                         if (options.radio_nr != int(radio_nr)):
-                            print "QSO:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring from radio/VFO", radio_nr
+                            print("QSO:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring from radio/VFO", radio_nr)
                             continue
 
                     # skip packet if QSO was more than DELAY seconds ago
                     t_delta = (now - timestamp).total_seconds()
                     if (t_delta > DELAY):
-                        print "---:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring ",\
-                            t_delta, "sec old QSO. Check clock settings?"
+                        print("---:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring ",\
+                            t_delta, "sec old QSO. Check clock settings?")
                         continue
                     elif (t_delta < -DELAY):
-                        print "---:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring ",\
-                            -t_delta, "sec QSO in the 'future'. Check clock settings?"
+                        print("---:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq, "--- ignoring ",\
+                            -t_delta, "sec QSO in the 'future'. Check clock settings?")
                         continue
 
 
                     calls = call + "_de_" + mycall
 
                     t = threading.Timer(DELAY, dump_audio, [calls, contest, mode, freq, timestamp, radio_nr, sampwidth])
-                    print "QSO:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq
+                    print("QSO:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq)
                     t.start()
                 except:
                     if (options.debug):
@@ -552,7 +553,7 @@ def main(argslist=None):
                     pass  # ignore, probably some other udp packet
 
         except (KeyboardInterrupt):
-            print "73! K3IT"
+            print("73! K3IT")
             stream.stop_stream()
             stream.close()
             p.terminate()
