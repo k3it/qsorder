@@ -479,9 +479,12 @@ def main(argslist=None):
             except xml.parsers.expat.ExpatError as e:
                 pass
 
-            if (udp_data == "qsorder_exit_loop_DEADBEEF"):
-                print("Received magic Exit packet")
-                break
+            try:
+                if ("qsorder_exit_loop_DEADBEEF" in udp_data.decode()):
+                    print("Received magic Exit packet")
+                    break
+            except:
+                pass
 
 
             if (options.debug):
@@ -563,6 +566,8 @@ def main(argslist=None):
     #
     stream.close()
     p.terminate()
+    sys.exit(0)
+
 
 if __name__ == '__main__':    
     main()

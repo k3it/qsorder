@@ -17,7 +17,8 @@ import xml.etree.cElementTree as ET
 import datetime, os
 
 
-MYPORT = 50000
+MYPORT = 12061
+UDP_IP = "192.168.123.2"
 
 
 class simpleUDPBcast(object):
@@ -28,17 +29,21 @@ class simpleUDPBcast(object):
 		# Send UDP broadcast packets
 
 		s = socket(AF_INET, SOCK_DGRAM)
-		s.bind(('', 0))
-		s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+		# s.bind(('192.168.123.2', 0))
+		# s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
 
 		# wait for qsorder to start
-		sleep(1)
+		sleep(3)
 
 		# data = repr(time.time()) + '\n'
-		s.sendto(udp_packet.encode(), ('<broadcast>', MYPORT))
+		try:
+			udp_packet = udp_packet.encode()
+		except:
+			pass
+		s.sendto(udp_packet, (UDP_IP, MYPORT))
 		sleep(delay_before_exit)
 		udp_packet = "qsorder_exit_loop_DEADBEEF"
-		s.sendto(udp_packet.encode(), ('<broadcast>', MYPORT))
+		s.sendto(udp_packet.encode(), (UDP_IP, MYPORT))
 
 
 
@@ -77,18 +82,19 @@ class ModTest(unittest.TestCase):
 		self.assertIn(verification_output, sys.stdout.getvalue())
 
 	def testDelay(self):
-		# with self.assertRaises(SystemExit):
-		argslist = ['-d 2', '-i 0', '-D']
-		output = checkUDPparsing("None",argslist=argslist).get_output()
+		with self.assertRaises(SystemExit):
+			argslist = ['-d 2', '-i 0', '-D']
+			output = checkUDPparsing("None",argslist=argslist).get_output()
 		verification_output = "Delay: 2 secs"
 		self.assertIn(verification_output, sys.stdout.getvalue())
 
 
 	def test_corrupted_udp(self):
-		data = ET.parse("test/udp-test-packet.xml").getroot()
-		data.find('timestamp').text = "blah"
-		udp_packet = ET.tostring(data)
-		output = checkUDPparsing(udp_packet).get_output()
+		with self.assertRaises(SystemExit):
+			data = ET.parse("test/udp-test-packet.xml").getroot()
+			data.find('timestamp').text = "blah"
+			udp_packet = ET.tostring(data)
+			output = checkUDPparsing(udp_packet).get_output()
 		verification_output = "Exit"
 		self.assertIn(verification_output, sys.stdout.getvalue())
 
@@ -97,9 +103,10 @@ class ModTest(unittest.TestCase):
 		'''
 		Should ignore QSOs in the "past"
 		'''
-		data = ET.parse("test/udp-test-packet.xml").getroot()
-		udp_packet = ET.tostring(data)
-		output = checkUDPparsing(udp_packet).get_output()
+		with self.assertRaises(SystemExit):
+			data = ET.parse("test/udp-test-packet.xml").getroot()
+			udp_packet = ET.tostring(data)
+			output = checkUDPparsing(udp_packet).get_output()
 		verification_output = "ignoring"
 		self.assertIn(verification_output, sys.stdout.getvalue())
 
@@ -107,14 +114,15 @@ class ModTest(unittest.TestCase):
 		'''
 		Should ignore QSOs in the "future"
 		'''
-		data = ET.parse("test/udp-test-packet.xml").getroot()
-		now = datetime.datetime.utcnow()
-		now += datetime.timedelta(1)
-		argslist = ['-d 3', '-S']
+		with self.assertRaises(SystemExit):
+			data = ET.parse("test/udp-test-packet.xml").getroot()
+			now = datetime.datetime.utcnow()
+			now += datetime.timedelta(1)
+			argslist = ['-d 3', '-S']
 
-		data.find('timestamp').text = now.strftime("%Y-%m-%d %H:%M:%S")
-		udp_packet = ET.tostring(data)
-		output = checkUDPparsing(udp_packet,argslist=argslist).get_output()
+			data.find('timestamp').text = now.strftime("%Y-%m-%d %H:%M:%S")
+			udp_packet = ET.tostring(data)
+			output = checkUDPparsing(udp_packet,argslist=argslist).get_output()
 		verification_output = "ignoring"
 		self.assertIn(verification_output, sys.stdout.getvalue())
 
@@ -122,15 +130,16 @@ class ModTest(unittest.TestCase):
 		'''
 		save a basic QSO
 		'''
-		data = ET.parse("test/udp-test-packet.xml").getroot()
-		now = datetime.datetime.utcnow()
-		now += datetime.timedelta(0,3)
+		with self.assertRaises(SystemExit):
+			data = ET.parse("test/udp-test-packet.xml").getroot()
+			now = datetime.datetime.utcnow()
+			now += datetime.timedelta(0,3)
 
-		argslist = ['-d 2', '-p tmp']
+			argslist = ['-d 2', '-p tmp']
 
-		data.find('timestamp').text = now.strftime("%Y-%m-%d %H:%M:%S")
-		udp_packet = ET.tostring(data)
-		output = checkUDPparsing(udp_packet,argslist=argslist,delay_before_exit=3).get_output()
+			data.find('timestamp').text = now.strftime("%Y-%m-%d %H:%M:%S")
+			udp_packet = ET.tostring(data)
+			output = checkUDPparsing(udp_packet,argslist=argslist,delay_before_exit=3).get_output()
 		verification_output = "WAV:"
 		self.assertIn(verification_output, sys.stdout.getvalue())
 		# check for mp3 conversion also
@@ -145,9 +154,6 @@ class ModTest(unittest.TestCase):
 		self.assertIn(verification_output, sys.stdout.getvalue())
 		verification_output = "Disk free space:"
 		self.assertIn(verification_output, sys.stdout.getvalue())
-
-
-
 
 
 if __name__ == '__main__':    
