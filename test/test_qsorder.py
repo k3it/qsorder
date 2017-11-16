@@ -35,10 +35,10 @@ class simpleUDPBcast(object):
 		sleep(1)
 
 		# data = repr(time.time()) + '\n'
-		s.sendto(udp_packet, ('<broadcast>', MYPORT))
+		s.sendto(udp_packet.encode(), ('<broadcast>', MYPORT))
 		sleep(delay_before_exit)
 		udp_packet = "qsorder_exit_loop_DEADBEEF"
-		s.sendto(udp_packet, ('<broadcast>', MYPORT))
+		s.sendto(udp_packet.encode(), ('<broadcast>', MYPORT))
 
 
 

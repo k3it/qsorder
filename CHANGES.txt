@@ -1,3 +1,7 @@
+v2.11
+  - small fixes related to non-ascii character handling
+  - convert code to python 3 format
+
 v2.10
  - add radio_nr flag. records qso's only from a specified Radio NR
  - build binary with cx_freeze and 7z instead of pyinstaller
