@@ -17,8 +17,8 @@ import xml.etree.cElementTree as ET
 import datetime, os
 
 
-MYPORT = 12061
-UDP_IP = "192.168.123.2"
+MYPORT = 50000
+UDP_IP = "127.0.0.1"
 
 
 class simpleUDPBcast(object):
