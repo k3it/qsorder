@@ -131,6 +131,9 @@ WB0TEV:
 > When in Belize, the set up in the rental shack  had an IC-7300 and microHam interface into which I plug the microphone connector from my headset.   One of the audio feeds I found with qsorder -q  had both the RX and TX audio in it and so I used it.  I can't explain how it worked, it just did.  I think it was a USB CODEC stream to/from the microHam interface box.
 
 # Change history
+v2.11
+  - small fixes related to non-ascii character handling
+  - convert code to python 3 format
 
 v2.10
  - add radio_nr flag. records qso's only from a specified Radio NR
