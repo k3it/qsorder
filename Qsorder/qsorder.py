@@ -200,14 +200,20 @@ def get_free_space_mb(folder):
 
 def start_new_lame_stream():
 
-    lame_path = os.path.dirname(os.path.realpath(__file__))
+    # try to convert to mp3
+    if getattr(sys, 'frozen', False):
+        # The application is frozen
+        lame_path = os.path.dirname(sys.executable)
+    else:
+        # The application is not frozen
+        # Change this bit to match where you store your data files:
+        lame_path = os.path.dirname(os.path.realpath(__file__))
+        
     lame_path += "\\lame.exe"
 
     if not os.path.isfile(lame_path):
         #try to use one in the system path
         lame_path = 'lame'
-
-
 
     # print "CTL: Starting new mp3 file", datetime.datetime.utcnow.strftime("%m-%d %H:%M:%S")
     now = datetime.datetime.utcnow()
@@ -238,7 +244,7 @@ def start_new_lame_stream():
         exit(-1)
 
     print("CTL:", str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + "Z started new .mp3 file: ", filename)
-    print("CTL: Disk free space:", get_free_space_mb(contest_dir)/1024, "GB")
+    print("CTL: Disk free space: %.2f GB" % (get_free_space_mb(contest_dir)/1024.0))
     if get_free_space_mb(contest_dir) < 100:
         print("CTL: WARNING: Low Disk space")
     return mp3handle,filename
@@ -431,7 +437,7 @@ def main(argslist=None):
 
     sampwidth = p.get_sample_size(FORMAT)
 
-    print("|", CHANNELS, "ch x ", dqlength * CHUNK / RATE, "secs audio buffer\n| Delay:", DELAY, "secs")
+    print("| %d ch x %d secs audio buffer\n| Delay: %d secs" % (CHANNELS, dqlength * CHUNK / RATE, DELAY))
     print("| Output directory", os.getcwd() + "\\<contest...>")
     if nopyhk:
         print("| Hotkey functionality is disabled")
