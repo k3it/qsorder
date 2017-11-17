@@ -348,9 +348,9 @@ def main(argslist=None):
 
 
 
-    print("--------------------------------------")
-    print("v2.11 QSO Recorder for N1MM, 2017 K3IT\n")
-    print("--------------------------------------")
+    print("-------------------------------------------------------")
+    print("|\tv2.11 QSO Recorder for N1MM, 2017 K3IT\t")
+    print("-------------------------------------------------------")
 
     # global p
     p = pyaudio.PyAudio()
@@ -390,7 +390,7 @@ def main(argslist=None):
     else:
         try:
             def_index = p.get_default_input_device_info()
-            print("Input Device :", def_index['index'], def_index['name'])
+            print("| Input Device :", def_index['index'], def_index['name'])
             DEVINDEX = def_index['index']
         except IOError as e:
             print(("No Input devices: %s" % e[0]))
@@ -407,7 +407,7 @@ def main(argslist=None):
 
 
 
-    print("Listening on UDP port", MYPORT)
+    print("| Listening on UDP port", MYPORT)
 
 
     # define callback
@@ -431,19 +431,21 @@ def main(argslist=None):
 
     sampwidth = p.get_sample_size(FORMAT)
 
-    print("* recording", CHANNELS, "ch,", dqlength * CHUNK / RATE, "secs audio buffer, Delay:", DELAY, "secs")
-    print("Output directory", os.getcwd() + "\\<contest...>")
+    print("|", CHANNELS, "ch x ", dqlength * CHUNK / RATE, "secs audio buffer\n| Delay:", DELAY, "secs")
+    print("| Output directory", os.getcwd() + "\\<contest...>")
     if nopyhk:
-        print("Hotkey functionality is disabled")
+        print("| Hotkey functionality is disabled")
     else:
-        print("Hotkey: CTRL+ALT+" + HOTKEY)
+        print("| Hotkey: CTRL+ALT+" + HOTKEY)
     if (options.station_nr and options.station_nr >= 0):
-        print("Recording only station", options.station_nr, "QSOs")
+        print("| Recording only station", options.station_nr, "QSOs")
     if (options.continuous):
-        print("Full contest recording enabled.")
-    print("\t--------------------------------\n")
-
-
+        print("| Full contest recording enabled.")
+    print("-------------------------------------------------------\n")
+    print("   QSO recordings can be shared with the World at:")
+    print("\thttp://qsorder.hamradiomap.com\n")
+    
+    
     #start continious mp3 writer thread
     if (options.continuous):
         mp3 = threading.Thread(target=writer)
