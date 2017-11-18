@@ -175,13 +175,14 @@ def manual_dump():
     print("QSO:", datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S"), "HOTKEY pressed")
     dump_audio("HOTKEY", "AUDIO", "RF", 0, datetime.datetime.utcnow(), 73, 2)
 
-
 def hotkey():
     if nopyhk:
         return
     # add hotkey
-    print('control', 'alt', HOTKEY.lower())
-    keyboard.add_hotkey('ctrl+alt+' + HOTKEY.lower(), manual_dump)
+    try:
+        keyboard.add_hotkey('ctrl+alt+' + HOTKEY.lower(), manual_dump)
+    except:
+        nopyhk = True
 
 def get_free_space_mb(folder):
     """ Return folder/drive free space (in bytes)
