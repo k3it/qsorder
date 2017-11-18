@@ -176,6 +176,7 @@ def manual_dump():
     dump_audio("HOTKEY", "AUDIO", "RF", 0, datetime.datetime.utcnow(), 73, 2)
 
 def hotkey():
+    global nopyhk
     if nopyhk:
         return
     # add hotkey
