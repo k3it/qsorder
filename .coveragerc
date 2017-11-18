@@ -1,2 +1,2 @@
 [report]
-omit = Qsorder/pyhk.py
+omit = Qsorder/pyaudio.py
