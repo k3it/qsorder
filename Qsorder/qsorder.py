@@ -6,7 +6,7 @@
 # Title: qsorder.py
 # Author: k3it
 # Generated: Mon, Nov 16 2017
-# Version: 2.11
+# Version: 2.12
 ##################################################
 
 # qsorder is free software: you can redistribute it and/or modify
@@ -35,7 +35,7 @@ import threading
 import binascii
 
 try:
-    from . import pyhk
+    import keyboard
     nopyhk = False
 except:
     nopyhk = True
@@ -53,7 +53,6 @@ from socket import *
 # from xml.dom.minidom import parse, parseString
 from xml.dom.minidom import parseString
 import xml.parsers.expat
-
 
 import logging
 
@@ -180,12 +179,9 @@ def manual_dump():
 def hotkey():
     if nopyhk:
         return
-    # create pyhk class instance
-    hot = pyhk.pyhk()
-
     # add hotkey
-    hot.addHotkey(['Ctrl', 'Alt', HOTKEY], manual_dump, isThread=False)
-    hot.start()
+    print('control', 'alt', HOTKEY.lower())
+    keyboard.add_hotkey('ctrl+alt+' + HOTKEY.lower(), manual_dump)
 
 def get_free_space_mb(folder):
     """ Return folder/drive free space (in bytes)
@@ -355,7 +351,7 @@ def main(argslist=None):
 
 
     print("-------------------------------------------------------")
-    print("|\tv2.11 QSO Recorder for N1MM, 2017 K3IT\t")
+    print("|\tv2.12 QSO Recorder for N1MM, 2017 K3IT\t")
     print("-------------------------------------------------------")
 
     # global p
@@ -386,7 +382,7 @@ def main(argslist=None):
     if (options.device_index):
         try:
             def_index = p.get_device_info_by_index(options.device_index)
-            print("Input Device :", def_index['name'])
+            print("| Input Device :", def_index['name'])
             DEVINDEX = options.device_index
         except IOError as e:
             print(("Invalid Input device: %s" % e[0]))
@@ -448,7 +444,7 @@ def main(argslist=None):
     if (options.continuous):
         print("| Full contest recording enabled.")
     print("-------------------------------------------------------\n")
-    print("   QSO recordings can be shared with the World at:")
+    print("   QSOrder recordings can be shared with the World at:")
     print("\thttp://qsorder.hamradiomap.com\n")
     
     
