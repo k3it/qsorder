@@ -14,7 +14,7 @@ v3.0 GUI version is work in progress
 
 qsorder.exe - a console app for audio recordig of N1MM contest QSOs.
 
-v2.10
+v2.12
 
 this is an external "plug-in" for N1MM which adds a QSO audio recording function. qsorder maintains a buffer in memory and listens for "Contact" UDP broadcasts sent by the logging program. The broadcasts trigger a dump of the audio buffer to a file after a specified delay time (default is 20 secs). The delay helps with capturing a tail-end after a QSO was entered into the log.
 
@@ -131,6 +131,10 @@ WB0TEV:
 > When in Belize, the set up in the rental shack  had an IC-7300 and microHam interface into which I plug the microphone connector from my headset.   One of the audio feeds I found with qsorder -q  had both the RX and TX audio in it and so I used it.  I can't explain how it worked, it just did.  I think it was a USB CODEC stream to/from the microHam interface box.
 
 # Change history
+v2.12
+  - hotkey function is back
+  - attempt to guess recording devices charset
+
 v2.11
   - small fixes related to non-ascii character handling
   - convert code to python 3 format
