@@ -1,7 +1,7 @@
-v2.11
+v2.12
   - hotkey function is back
-  - fix recording device encodning
-
+  - attempt to guess recording device charset
+  
 v2.11
   - small fixes related to non-ascii character handling
   - convert code to python 3 format
