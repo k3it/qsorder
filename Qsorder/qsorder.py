@@ -144,18 +144,21 @@ def dump_audio(call, contest, mode, freq, qso_time, radio_nr, sampwidth):
         #try to use one in the system path
         lame_path = 'lame'
 
+    artist = "QSO Audio"
+    title = os.path.basename(w.wavfile).replace('.wav', '')
+    year = str(qso_time.year)
 
     if (options.so2r and radio_nr == "1"):
         command = [lame_path]
-        arguments = ["-h", "-m", "m", "--scale-l", "2", "--scale-r", "0", w.wavfile]
+        arguments = ["--tt", title, "--ta", artist, "--ty", year, "-h", "-m", "m", "--scale-l", "2", "--scale-r", "0", w.wavfile]
         command.extend(arguments)
     elif (options.so2r and radio_nr == "2"):
         command = [lame_path]
-        arguments = ["-h", "-m", "m", "--scale-l", "0", "--scale-r", "2", w.wavfile]
+        arguments = ["--tt", title, "--ta", artist, "--ty", year, "-h", "-m", "m", "--scale-l", "0", "--scale-r", "2", w.wavfile]
         command.extend(arguments)
     else:
         command = [lame_path]
-        arguments = ["-h", w.wavfile]
+        arguments = ["--tt", title, "--ta", artist, "--ty", year, "-h", w.wavfile]
         command.extend(arguments)
 
 
