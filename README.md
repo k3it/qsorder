@@ -8,13 +8,11 @@ qsorder - audio recordig app for N1MM and TR4W contest QSOs.
 Download stable windows executable under [Releases](https://github.com/k3it/qsorder/releases)
 
 
-v3.0 GUI version is work in progress 
-
 ![screenshot](https://raw.githubusercontent.com/k3it/qsorder/master/qsorder.png)
 
-qsorder.exe - a console app for audio recordig of N1MM contest QSOs.
+qsorder.exe - a console app for audio recordimg of N1MM contest QSOs.
 
-v2.12
+v2.13
 
 this is an external "plug-in" for N1MM which adds a QSO audio recording function. qsorder maintains a buffer in memory and listens for "Contact" UDP broadcasts sent by the logging program. The broadcasts trigger a dump of the audio buffer to a file after a specified delay time (default is 20 secs). The delay helps with capturing a tail-end after a QSO was entered into the log.
 
@@ -131,6 +129,11 @@ WB0TEV:
 > When in Belize, the set up in the rental shack  had an IC-7300 and microHam interface into which I plug the microphone connector from my headset.   One of the audio feeds I found with qsorder -q  had both the RX and TX audio in it and so I used it.  I can't explain how it worked, it just did.  I think it was a USB CODEC stream to/from the microHam interface box.
 
 # Change history
+v2.13
+  - include MSVC redistributable
+  - rebuild with cx_freeze and make installable package (MSI)
+  - Add Id tags to the MP3 files
+
 v2.12
   - hotkey function is back
   - attempt to guess recording devices charset

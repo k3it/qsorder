@@ -5,8 +5,8 @@
 # qsorder - A contest QSO recorder
 # Title: qsorder.py
 # Author: k3it
-# Generated: Mon, Nov 16 2017
-# Version: 2.12
+# Generated: Sat, Jun 2 2018
+# Version: 2.13
 ##################################################
 
 # qsorder is free software: you can redistribute it and/or modify
@@ -356,7 +356,7 @@ def main(argslist=None):
 
 
     print("-------------------------------------------------------")
-    print("|\tv2.12 QSO Recorder for N1MM, 2017 K3IT\t")
+    print("|\tv2.13 QSO Recorder for N1MM, 2018 K3IT\t")
     print("-------------------------------------------------------")
 
     # global p

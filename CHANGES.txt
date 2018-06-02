@@ -1,3 +1,8 @@
+v2.13
+  - include MSVC redistributable
+  - rebuild with cx_freeze and make installable package (MSI)
+  - Add Id tags to the MP3 files
+
 v2.12
   - hotkey function is back
   - attempt to guess recording device charset
