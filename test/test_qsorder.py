@@ -134,7 +134,7 @@ class ModTest(unittest.TestCase):
 			data = ET.parse("test/udp-test-packet.xml").getroot()
 			now = datetime.datetime.utcnow()
 			now += datetime.timedelta(1)
-			argslist = ['-d 3', '-S']
+			argslist = ['-d 3', '-S', '-D']
 
 			data.find('timestamp').text = now.strftime("%Y-%m-%d %H:%M:%S")
 			udp_packet = ET.tostring(data)
