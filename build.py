@@ -1,5 +1,10 @@
 from cx_Freeze import setup, Executable
 
+#must copy the VC runtime DLL by hand
+#cp c:\Windows\System32\vcruntime140.dll build\exe.win32-3.6\lib\
+#
+# see https://github.com/anthony-tuininga/cx_Freeze/issues/278
+
 # Dependencies are automatically detected, but it might need
 # fine tuning.
 buildOptions = dict(packages = [], excludes = [], include_msvcr = True, include_files = ['BUGS.txt', 'CHANGES.txt', 'lame.exe'])
@@ -15,3 +20,4 @@ setup(name='Qsorder',
       description = 'console app for contest audio recording',
       options = dict(build_exe = buildOptions),
       executables = executables)
+
