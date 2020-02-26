@@ -1,6 +1,6 @@
 dropbox
-PyAudio
 PyQt5
 python-dateutil
 urllib3
 coverage
+sounddevice

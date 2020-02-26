@@ -33,7 +33,7 @@ class qsorderApp(QWidget):
         self.initUI()
 
     def _register(self):
-        webbrowser.open('http://qsorder-k3it.rhcloud.com/register')
+        webbrowser.open('https://qsorder.hamradiomap.com/register')
 
 
     def initUI(self):
