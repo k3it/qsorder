@@ -1,3 +1,4 @@
+sounddevice
 pyaudio
 python-dateutil
 bs4
