@@ -131,6 +131,13 @@ WB0TEV:
 > When in Belize, the set up in the rental shack  had an IC-7300 and microHam interface into which I plug the microphone connector from my headset.   One of the audio feeds I found with qsorder -q  had both the RX and TX audio in it and so I used it.  I can't explain how it worked, it just did.  I think it was a USB CODEC stream to/from the microHam interface box.
 
 # Change history
+v2.15
+  - add --sample-rate flag
+  - switch from pyaudio to sounddevice module
+
+v2.14
+  - in SO2R mode use -mr and -ml flags for mp3 encoding (N5HC)
+
 v2.13
   - include MSVC redistributable
   - rebuild with cx_freeze and make installable package (MSI)
