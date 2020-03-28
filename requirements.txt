@@ -1,5 +1,4 @@
 sounddevice
-pyaudio
 python-dateutil
 bs4
 chardet
