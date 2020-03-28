@@ -1,4 +1,4 @@
-pyaudio
+python3-pyaudio
 python-dateutil
 bs4
 chardet
