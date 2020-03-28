@@ -379,7 +379,6 @@ def main(argslist=None):
             DEVINDEX = options.device_index
         except IOError as e:
             print(("Invalid Input device: %s" % e[0]))
-            p.terminate()
             os._exit(-1)
 
     else:
@@ -389,7 +388,6 @@ def main(argslist=None):
             DEVINDEX = sd.default.device
         except IOError as e:
             print(("No Input devices: %s" % e[0]))
-            p.terminate()
             os._exit(-1)
 
     # queue for chunked recording
@@ -551,7 +549,6 @@ def main(argslist=None):
 
     #
     stream.close()
-    p.terminate()
     sys.exit(0)
 
 
