@@ -92,6 +92,8 @@ Options:
                         Right Ch - Radio2 QSOs [default=False]
   -s STATION_NR, --station-nr=STATION_NR
                         Network Station Number [default=none]
+  -R SAMPLE_RATE, --sample-rate SAMPLE_RATE
+                        Audio sampling rate [default=11025]
 ```
 
 Multi Multi Configuration Example N1MM Logger.ini file   
