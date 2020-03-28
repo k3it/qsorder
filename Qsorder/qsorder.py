@@ -6,7 +6,7 @@
 # Title: qsorder.py
 # Author: k3it
 # Generated: Fri, Mar 27 2020
-# Version: 2.14
+# Version: 2.15
 ##################################################
 
 # qsorder is free software: you can redistribute it and/or modify
@@ -22,20 +22,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+# import string
+import binascii
 import os
-import subprocess
 import re
-import pyaudio
-import wave
-import time
+import subprocess
 import sys
 # import struct
 import threading
-# import string
-import binascii
+import time
+import wave
 
 try:
     import keyboard
+
     nopyhk = False
 except:
     nopyhk = True
@@ -53,9 +53,10 @@ from xml.dom.minidom import parseString
 import xml.parsers.expat
 
 import logging
+import sounddevice as sd
 
 CHUNK = 1024
-FORMAT = pyaudio.paInt16
+FORMAT = 'int16'
 CHANNELS = 2
 BASENAME = "QSO"
 LO = 14000
@@ -350,51 +351,43 @@ def main(argslist=None):
         t.start()
 
     print("-------------------------------------------------------")
-    print("|\tv2.14 QSO Recorder for N1MM Logger+, 2020 K3IT\t")
+    print("|\tv2.15 QSO Recorder for N1MM Logger+, 2020 K3IT\t")
     print("-------------------------------------------------------")
 
     # global p
-    p = pyaudio.PyAudio()
+    # p = pyaudio.PyAudio()
+    devs = sd.query_devices()
 
     if options.query_inputs:
-        max_devs = p.get_device_count()
-        print("Detected", max_devs, "devices\n")
-        print("Device index Description")
+        print("\nDevice index Description")
         print("------------ -----------")
-        for i in range(max_devs):
-            p = pyaudio.PyAudio()
-            devinfo = p.get_device_info_by_index(i)
+        devs = sd.query_devices()
 
-            if devinfo['maxInputChannels'] > 0:
+        for i in range(len(devs)):
+            if devs[i]['max_input_channels'] > 0:
                 try:
-                    if p.is_format_supported(int(RATE),
-                                             input_device=devinfo['index'],
-                                             input_channels=devinfo['maxInputChannels'],
-                                             input_format=pyaudio.paInt16):
-                        print("\t", i, "\t", devinfo['name'])
-                except ValueError:
+                    sd.check_input_settings(device=i, channels=CHANNELS, dtype=FORMAT)
+                    print("\t", i, "\t", devs[i]['name'], " - ", sd.query_hostapis(devs[i]['hostapi'])['name'])
+                except:
                     pass
-            p.terminate()
-        sys.exit(0)
+        exit(0)
 
     if options.device_index:
         try:
-            def_index = p.get_device_info_by_index(options.device_index)
+            def_index = sd.query_devices(device=options.device_index, kind='input')
             print("| Input Device :", def_index['name'])
             DEVINDEX = options.device_index
         except IOError as e:
             print(("Invalid Input device: %s" % e[0]))
-            p.terminate()
             os._exit(-1)
 
     else:
         try:
-            def_index = p.get_default_input_device_info()
-            print("| Input Device :", def_index['index'], def_index['name'])
-            DEVINDEX = def_index['index']
+            def_index = sd.query_devices(device=sd.default.device, kind='input')
+            print("| Input Device :", def_index['name'], sd.query_hostapis(def_index['hostapi'])['name'])
+            DEVINDEX = sd.default.device
         except IOError as e:
             print(("No Input devices: %s" % e[0]))
-            p.terminate()
             os._exit(-1)
 
     # queue for chunked recording
@@ -412,20 +405,19 @@ def main(argslist=None):
         frames.append(in_data)
         # add code for continous recording here
         replay_frames.append(in_data)
-        return None, pyaudio.paContinue
+        # return None, pyaudio.paContinue
 
-    stream = p.open(format=FORMAT,
-                    channels=CHANNELS,
-                    input_device_index=DEVINDEX,
-                    rate=RATE,
-                    input=True,
-                    frames_per_buffer=CHUNK,
-                    stream_callback=callback)
+    stream = sd.RawInputStream(dtype=FORMAT,
+                               channels=CHANNELS,
+                               device=DEVINDEX,
+                               samplerate=RATE,
+                               blocksize=CHUNK,
+                               callback=callback)
 
     # start the stream
-    stream.start_stream()
+    stream.start()
 
-    sampwidth = p.get_sample_size(FORMAT)
+    sampwidth = stream.samplesize
 
     print("| %d ch x %d secs audio buffer\n| Delay: %d secs" % (CHANNELS, dqlength * CHUNK / RATE, DELAY))
     print("| Output directory", os.getcwd() + "\\<contest...>")
@@ -464,7 +456,7 @@ def main(argslist=None):
     def true_func():
         return True
 
-    while stream.is_active() and true_func:
+    while stream.active and true_func:
         try:
             udp_data = s.recv(2048)
             check_sum = binascii.crc32(udp_data)
@@ -551,14 +543,12 @@ def main(argslist=None):
 
         except KeyboardInterrupt:
             print("73! K3IT")
-            stream.stop_stream()
+            stream.stop()
             stream.close()
-            p.terminate()
             sys.exit(0)
 
     #
     stream.close()
-    p.terminate()
     sys.exit(0)
 
 
