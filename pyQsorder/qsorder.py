@@ -27,9 +27,9 @@ import argparse
 import binascii
 import ctypes
 import datetime
-import dateutil.parser
 import json
 import logging
+import os
 import platform
 import re
 import subprocess
@@ -42,31 +42,24 @@ from collections import deque
 from socket import *
 from xml.dom.minidom import parseString
 
+import dateutil.parser
+import dropbox
 import sounddevice as sd
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import QFileDialog
+# from .qgui import *
+# except:
+from qgui import *
 
 # from PyQt5.QtUiTools import *
-
 # from PyQt5 import *
-
-try:
-    from .qgui import *
-except:
-    from qgui import *
-
-import dropbox
 
 CHUNK = 1024
 FORMAT = 'int16'
 CHANNELS = 2
-RATE = 11025
 BASENAME = "QSO"
 LO = 14000
-dqlength = 360  # number of chunks to store in the buffer
-DELAY = 20.0
-MYPORT = 12060
 DEBUG_FILE = "qsorder-debug-log.txt"
 
 
@@ -153,14 +146,25 @@ class qsorder(object):
                             help="Network Station Number [default=%(default)s]")
         parser.add_argument("-u", "--drop-key", type=str, default=None,
                             help="Dropbox auth key for file upload [default=%(default)s]")
+        parser.add_argument("-r", "--radio-nr", type=int, default=None,
+                            help="Radio Number [default=%(default)s]")
+        parser.add_argument("-R", "--sample-rate", type=int, default=11025,
+                            help="Audio sampling rate [default=%(default)s]")
 
         # global self.options
         # arglist can be passed from another python script or at the command line
         self.options = parser.parse_args(argslist)
 
+        global RATE
+        RATE = self.options.sample_rate
+
+        dqlength = int(self.options.buffer_length * RATE / CHUNK) + 1
+        DELAY = self.options.delay
+        MYPORT = self.options.port
+
         # load parameters from json file, if no flags specified on the command line and config file exists
         config_file = os.path.dirname(os.path.realpath(__file__)) + "/qsorder-config.txt"
-        if (len(sys.argv[1:]) == 0 and os.path.isfile(config_file)):
+        if len(sys.argv[1:]) == 0 and os.path.isfile(config_file):
             try:
                 with open(config_file) as params_file:
                     params = json.load(params_file)
@@ -169,43 +173,29 @@ class qsorder(object):
             except:
                 pass
 
-        # global p
-        # self.p = pyaudio.PyAudio()
-
-        # max_devs = self.p.get_device_count()
+        # max_devs = sd.DeviceList.count()
         self.inputs = {}
         self.selected_input = None
-        if (self.options.query_inputs):
+        if self.options.query_inputs:
             print("\nDevice index Description")
             print("------------ -----------")
-            devs = sd.query_devices()
 
-            for i in range(len(devs)):
-                if devs[i]['max_input_channels'] > 0:
-                    try:
-                        sd.check_input_settings(device=i, channels=CHANNELS, dtype=FORMAT)
-                        print("\t", i, "\t", devs[i]['name'], " - ", sd.query_hostapis(devs[i]['hostapi'])['name'])
-                    except:
-                        pass
-            # for i in range(max_devs):
-            #     p = pyaudio.PyAudio()
-            #     devinfo = self.p.get_device_info_by_index(i)
-            #
-            #     if devinfo['maxInputChannels'] > 0:
-            #         try:
-            #             if self.p.is_format_supported(int(RATE),
-            #                                           input_device=devinfo['index'],
-            #                                           input_channels=devinfo['maxInputChannels'],
-            #                                           input_format=pyaudio.paInt16):
-            #                 if (self.options.query_inputs):
-            #                     print("\t", i, "\t", devinfo['name'].encode('unicode_escape'))
-            #                 else:
-            #                     self.inputs[devinfo['name']] = i
-            #                     if (i == self.options.device_index):
-            #                         self.selected_input = devinfo['name']
-            #         except ValueError:
-            #             print("uknown chardets in sound input name.")
-            #             pass
+        devs = sd.query_devices()
+
+        for i in range(len(devs)):
+            if devs[i]['max_input_channels'] > 0:
+                try:
+                    sd.check_input_settings(device=i, channels=CHANNELS, dtype=FORMAT)
+                    dev_name = devs[i]['name'] + " - " + sd.query_hostapis(devs[i]['hostapi'])['name']
+                    if self.options.query_inputs:
+                        print("\t", i, "\t", dev_name)
+                    else:
+                        self.inputs[dev_name] = i
+                        if i == self.options.device_index:
+                            self.selected_input = dev_name
+                except:
+                    pass
+        if self.options.query_inputs:
             exit(0)
 
         app = QApplication(sys.argv)
@@ -215,16 +205,14 @@ class qsorder(object):
         # find the default input
         if not self.options.device_index:
             try:
-                def_index = self.p.get_default_input_device_info()
+                def_index = sd.query_devices(device=sd.default.device, kind='input')
                 self.selected_input = def_index['name']
             except IOError as e:
                 self._update_text(e.strerror)
 
-        self.p.terminate()
-
         # populate inputs comnbobox
         self.qsorder.ui.inputs.addItems(list(self.inputs.keys()))
-        if (self.selected_input):
+        if self.selected_input:
             idx = self.qsorder.ui.inputs.findText(self.selected_input)
             self.qsorder.ui.inputs.setCurrentIndex(idx)
 
@@ -275,8 +263,8 @@ class qsorder(object):
             self.options.device_index = self.inputs[self.qsorder.ui.inputs.currentText()]
         except KeyError as e:
             msg = ("Invalid Input device index: %s" % self.options.device_index)
-            self._update_text(msg);
-            logging.debug(msg);
+            self._update_text(msg)
+            logging.debug(msg)
             print(msg)
             return
 
@@ -303,7 +291,7 @@ class qsorder(object):
 
     def _upload_to_dropbox(self, file):
         # skip upload if dropbox status is bad or for manual audio
-        if ('%' in self.qsorder.ui.label_dropbox_status.text() and not "AUDIO" in file):
+        if '%' in self.qsorder.ui.label_dropbox_status.text() and not "AUDIO" in file:
             file = re.sub('\.wav$', '.mp3', file)
             # file = file.replace(self.options.path, '')
             # file = file.replace('\\', '/')
@@ -311,18 +299,18 @@ class qsorder(object):
                 with open(file, "rb") as f:
                     self.client.files_upload(f.read(), file.replace(self.options.path, ''), mute=True)
                     msg = ("WAV: Uploaded %s\n" % file.replace(self.options.path, ''))
-                    self._update_text(msg);
-                    logging.debug(msg);
+                    self._update_text(msg)
+                    logging.debug(msg)
                     print(msg)
             except Exception as err:
                 msg = ("ERR: Failed to upload %s\n%s" % (file.replace(self.options.path, ''), err))
-                self._update_text(msg);
-                logging.debug(msg);
+                self._update_text(msg)
+                logging.debug(msg)
                 print(msg)
 
     def _update_status(self):
         palette = QPalette()
-        if (hasattr(self, 'thread') and self.thread.isRunning()):
+        if hasattr(self, 'thread') and self.thread.isRunning():
             palette.setColor(QPalette.Foreground, Qt.blue)
             self.qsorder.ui.label_status.setPalette(palette)
             freegb = self.thread._get_free_space_mb(self.options.path) / 1024.0
@@ -379,7 +367,7 @@ class qsorder(object):
         udp_packet = 'qsorder_exit_loop_DEADBEEF'
         s.sendto(udp_packet.encode(), ('<broadcast>', MYPORT))
         s.close()
-        if (hasattr(self, 'thread') and not self.thread.wait(2000)):
+        if hasattr(self, 'thread') and not self.thread.wait(2000):
             print("Tired of waiting, killing thread")
             self.thread.terminate()
             self.thread.wait(500)
@@ -413,7 +401,6 @@ class recording_loop(QThread):
     def __init__(self, options):
         super(recording_loop, self).__init__()
         self.options = options
-        self.p = pyaudio.PyAudio()
         self._isRunning = True
         self.input = None
         self.qsos_in_queue = 0
@@ -440,11 +427,11 @@ class recording_loop(QThread):
 
         lame_path = self.lame_path
 
-        if (self.options.so2r and radio_nr == "1"):
+        if self.options.so2r and radio_nr == "1":
             command = [lame_path]
             arguments = ["-h", "-m", "m", "--scale-l", "2", "--scale-r", "0", w.wavfile]
             command.extend(arguments)
-        elif (self.options.so2r and radio_nr == "2"):
+        elif self.options.so2r and radio_nr == "2":
             command = [lame_path]
             arguments = ["-h", "-m", "m", "--scale-l", "0", "--scale-r", "2", w.wavfile]
             command.extend(arguments)
@@ -454,7 +441,7 @@ class recording_loop(QThread):
             command.extend(arguments)
 
         try:
-            if (self.options.debug):
+            if self.options.debug:
                 logging.debug(command)
 
             startupinfo = None
@@ -471,8 +458,8 @@ class recording_loop(QThread):
             msg = "WAV: " + datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S") + " " + BASENAME[:20] \
                   + ".." + str(freq) + "Mhz.mp3 " + gain.group(0)
             msg = msg.rstrip()
-            self.update_console.emit(msg);
-            print(msg);
+            self.update_console.emit(msg)
+            print(msg)
             logging.debug(msg)
 
             os.remove(w.wavfile)
@@ -482,18 +469,18 @@ class recording_loop(QThread):
 
         except:
             msg = ("could not convert wav to mp3 " + str(sys.exc_info()))
-            self.update_console.emit(msg);
-            print(msg);
+            self.update_console.emit(msg)
+            print(msg)
             logging.debug(msg)
 
-        if (call != "HOTKEY"):
+        if call != "HOTKEY":
             self.qsos_in_queue -= 1
 
     def _manual_dump(self):
         msg = ("QSO: " + datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S")
                + " Ctrl+Alt+" + HOTKEY + " HOTKEY pressed")
-        self.update_console.emit(msg);
-        print(msg);
+        self.update_console.emit(msg)
+        print(msg)
         logging.debug(msg)
         self._dump_audio("HOTKEY", "AUDIO", "RF", 0, datetime.datetime.utcnow(), 73, self.sampwidth)
 
@@ -550,26 +537,26 @@ class recording_loop(QThread):
             mp3handle = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE,
                                          startupinfo=startupinfo, stdin=subprocess.PIPE)
         except:
-            msg = ("CTL: error starting continous mp3 recording.")
-            self.update_console.emit(msg);
-            print(msg);
+            msg = "CTL: error starting continous mp3 recording."
+            self.update_console.emit(msg)
+            print(msg)
             logging.debug(msg)
             exit(-1)
 
         msg = ("CTL: " + str(now.hour).zfill(2) + ":" + str(now.minute).zfill(
             2) + "Z started new .mp3 file: " + filename)
-        self.update_console.emit(msg);
-        print(msg);
+        self.update_console.emit(msg)
+        print(msg)
         logging.debug(msg)
         freegb = self._get_free_space_mb(contest_dir) / 1024.0
         msg = ("CTL: Disk free space: %.2f GB" % freegb)
-        self.update_console.emit(msg);
-        print(msg);
+        self.update_console.emit(msg)
+        print(msg)
         logging.debug(msg)
         if self._get_free_space_mb(contest_dir) < 100:
-            msg = ("CTL: WARNING: Low Disk space")
-            self.update_console.emit(msg);
-            print(msg);
+            msg = "CTL: WARNING: Low Disk space"
+            self.update_console.emit(msg)
+            print(msg)
             logging.debug(msg)
         return mp3handle, filename
         # write continious mp3 stream to disk in a separate worker thread
@@ -584,7 +571,7 @@ class recording_loop(QThread):
         bytes_written = 0
         avg_rate = 0
 
-        while (not stop_event.is_set()):
+        while not stop_event.is_set():
             # open a new file on top of the hour
             now = datetime.datetime.utcnow()
             if utchr != now.hour:
@@ -593,13 +580,13 @@ class recording_loop(QThread):
                 lame.terminate()
                 utchr = now.hour
                 (lame, filename) = self._start_new_lame_stream()
-            if (len(replay_frames) > 0):
+            if len(replay_frames) > 0:
                 data = replay_frames.popleft()
                 lame.stdin.write(data)
                 bytes_written += sys.getsizeof(data)
             else:
                 end = time.clock() * 1000
-                if (end - start > 60000):
+                if end - start > 60000:
                     elapsed = end - start
                     sampling_rate = bytes_written / 4 / elapsed
                     # self.update_console.emit(str(bytes_written) + " bytes in " + str(elapsed) + "ms. Sampling rate: " 
@@ -607,17 +594,17 @@ class recording_loop(QThread):
                     start = end
                     bytes_written = 0
                 time.sleep(1)
-            if (utcmin != now.minute and now.minute % 10 == 0 and now.minute != 0):
+            if utcmin != now.minute and now.minute % 10 == 0 and now.minute != 0:
                 msg = ("CTL: " + str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2)
                        + "Z ...recording: " + filename)
-                self.update_console.emit(msg);
-                print(msg);
+                self.update_console.emit(msg)
+                print(msg)
                 logging.debug(msg)
                 contest_dir = "AUDIO_" + str(now.year)
                 if self._get_free_space_mb(contest_dir) < 100:
-                    msg = ("CTL: WARNING: Low Disk space")
-                    self.update_console.emit(msg);
-                    print(msg);
+                    msg = "CTL: WARNING: Low Disk space"
+                    self.update_console.emit(msg)
+                    print(msg)
                     logging.debug(msg)
                 utcmin = now.minute
 
@@ -650,21 +637,21 @@ class recording_loop(QThread):
         global MYPORT
         MYPORT = self.options.port
 
-        msg = ("--------------------------------------")
-        self.update_console.emit(msg);
-        print(msg);
+        msg = "--------------------------------------"
+        self.update_console.emit(msg)
+        print(msg)
         logging.debug(msg)
         msg = ("QSO Recorder for N1MM v" + __version__ + ", 2017 K3IT")
-        self.update_console.emit(msg);
-        print(msg);
+        self.update_console.emit(msg)
+        print(msg)
         logging.debug(msg)
-        msg = ("--------------------------------------")
-        self.update_console.emit(msg);
-        print(msg);
+        msg = "--------------------------------------"
+        self.update_console.emit(msg)
+        print(msg)
         logging.debug(msg)
         msg = (datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"))
-        self.update_console.emit(msg);
-        print(msg);
+        self.update_console.emit(msg)
+        print(msg)
         logging.debug(msg)
 
         if platform.system() == 'Windows':
@@ -672,75 +659,72 @@ class recording_loop(QThread):
         else:
             self.lame_path = self._which('lame')
 
-        if (not self.lame_path):
-            msg = ("CTL: Cannot find lame encoder executable")
-            self.update_console.emit(msg);
-            print(msg);
+        if not self.lame_path:
+            msg = "CTL: Cannot find lame encoder executable"
+            self.update_console.emit(msg)
+            print(msg)
             logging.debug(msg)
         else:
             msg = ("mp3 encoder: " + self.lame_path)
-            self.update_console.emit(msg);
-            print(msg);
+            self.update_console.emit(msg)
+            print(msg)
             logging.debug(msg)
 
-        if (self.options.path):
+        if self.options.path:
             try:
                 os.path.isdir(self.options.path)
             except:
                 msg = ("Invalid directory specified: " + self.options.path)
-                self.update_console.emit(msg);
-                print(msg);
+                self.update_console.emit(msg)
+                print(msg)
                 logging.debug(msg)
                 return
 
-        if (len(self.options.hot_key) == 1):
+        if len(self.options.hot_key) == 1:
             global HOTKEY
             HOTKEY = self.options.hot_key.upper()
         else:
-            msg = ("Hotkey should be a single character")
-            self.update_console.emit(msg);
-            print(msg);
+            msg = "Hotkey should be a single character"
+            self.update_console.emit(msg)
+            print(msg)
             logging.debug(msg)
             return
 
-        if (self.options.debug):
+        if self.options.debug:
             logging.basicConfig(filename=DEBUG_FILE, level=logging.DEBUG, format='%(asctime)s %(message)s')
             logging.debug('debug log started')
             logging.debug('qsorder self.options:')
             logging.debug(self.options)
 
-        if (self.options.device_index):
+        if self.options.device_index:
             try:
-                def_index = self.p.get_device_info_by_index(self.options.device_index)
+                def_index = sd.query_devices(device=self.options.device_index, kind='input')
                 msg = ("Input Device: " + def_index['name'])
-                self.update_console.emit(msg);
-                print(msg);
+                self.update_console.emit(msg)
+                print(msg)
                 logging.debug(msg)
                 self.input = def_index['name']
                 DEVINDEX = self.options.device_index
             except IOError as e:
                 msg = ("Invalid Input device: %s" % e[0])
-                self.update_console.emit(msg);
-                print(msg);
+                self.update_console.emit(msg)
+                print(msg)
                 logging.debug(msg)
-                self.p.terminate()
                 os._exit(-1)
 
         else:
             try:
-                def_index = self.p.get_default_input_device_info()
-                # msg = "Input Device: " +  str(def_index['index']) + " " + str(def_index['name'])
-                dev_name = def_index['name']  # .encode('utf-8')
+                def_index = sd.query_devices(device=sd.default.device, kind='input')
+                dev_name = def_index['name']
                 msg = "Input Device: " + dev_name
                 self.update_console.emit(msg)
                 self.input = def_index['name']
-                DEVINDEX = def_index['index']
+                DEVINDEX = sd.default.device
             except IOError as e:
                 msg = ("No Input devices: %s" % e[0])
-                self.update_console.emit(msg);
-                print(msg);
+                self.update_console.emit(msg)
+                print(msg)
                 logging.debug(msg)
-                self.p.terminate()
                 os._exit(-1)
 
                 # queue for chunked recording
@@ -752,64 +736,59 @@ class recording_loop(QThread):
         replay_frames = deque('', dqlength)
 
         msg = ("Listening on UDP port " + str(MYPORT))
-        self.update_console.emit(msg);
-        print(msg);
+        self.update_console.emit(msg)
+        print(msg)
         logging.debug(msg)
 
         # define callback
         def callback(in_data, frame_count, time_info, status):
             frames.append(in_data)
-            # rms = audioop.rms(in_data,2)
-            # decibel = 20 * log10(rms)
-            # print "Volume: ", decibel
             # add code for continous recording here
             replay_frames.append(in_data)
-            return (None, pyaudio.paContinue)
 
-        stream = self.p.open(format=FORMAT,
-                             channels=CHANNELS,
-                             input_device_index=DEVINDEX,
-                             rate=RATE,
-                             input=True,
-                             frames_per_buffer=CHUNK,
-                             stream_callback=callback)
+        stream = sd.RawInputStream(dtype=FORMAT,
+                                   channels=CHANNELS,
+                                   device=DEVINDEX,
+                                   samplerate=RATE,
+                                   blocksize=CHUNK,
+                                   callback=callback)
 
         # start the stream
-        stream.start_stream()
+        stream.start()
 
-        self.sampwidth = self.p.get_sample_size(FORMAT)
+        self.sampwidth = stream.samplesize
 
         msg = ("* recording %d ch, %d secs audio buffer, Delay: %d secs" % (CHANNELS, dqlength * CHUNK / RATE, DELAY))
-        self.update_console.emit(msg);
-        print(msg);
+        self.update_console.emit(msg)
+        print(msg)
         logging.debug(msg)
 
         msg = ("Output directory: " + self.options.path.replace('\\', '/') + "/<contest...>")
-        self.update_console.emit(msg);
-        print(msg);
+        self.update_console.emit(msg)
+        print(msg)
         logging.debug(msg)
         msg = ("Hotkey: CTRL+ALT+" + HOTKEY)
-        self.update_console.emit(msg);
-        print(msg);
+        self.update_console.emit(msg)
+        print(msg)
         logging.debug(msg)
 
-        if (self.options.station_nr > 0):
+        if self.options.station_nr > 0:
             msg = ("Recording only station " + str(self.options.station_nr) + "QSOs")
-            self.update_console.emit(msg);
-            print(msg);
+            self.update_console.emit(msg)
+            print(msg)
             logging.debug(msg)
-        if (self.options.continuous):
-            msg = ("Full contest recording enabled.")
-            self.update_console.emit(msg);
-            print(msg);
+        if self.options.continuous:
+            msg = "Full contest recording enabled."
+            self.update_console.emit(msg)
+            print(msg)
             logging.debug(msg)
-        msg = ("--------------------------------------\n")
-        self.update_console.emit(msg);
-        print(msg);
+        msg = "--------------------------------------\n"
+        self.update_console.emit(msg)
+        print(msg)
         logging.debug(msg)
 
         # start continious mp3 writer thread
-        if (self.options.continuous):
+        if self.options.continuous:
             mp3_stop = threading.Event()
             mp3 = threading.Thread(target=self._writer, args=(mp3_stop,))
             mp3.setDaemon(True)
@@ -825,13 +804,13 @@ class recording_loop(QThread):
         try:
             s.bind(('', MYPORT))
         except:
-            msg = ("Error connecting to the UDP stream.")
-            self.update_console.emit(msg);
-            print(msg);
+            msg = "Error connecting to the UDP stream."
+            self.update_console.emit(msg)
+            print(msg)
             logging.debug(msg)
 
         seen = {}
-        while stream.is_active():
+        while stream.active():
             try:
                 udp_data = s.recv(2048)
                 check_sum = binascii.crc32(udp_data)
@@ -841,28 +820,28 @@ class recording_loop(QThread):
                 except xml.parsers.expat.ExpatError as e:
                     pass
 
-                if ("qsorder_exit_loop_DEADBEEF" in udp_data or self._isRunning == False):
-                    msg = ("Received Exit magic signal")
-                    self.update_console.emit(msg);
-                    print(msg);
+                if "qsorder_exit_loop_DEADBEEF" in udp_data or self._isRunning is False:
+                    msg = "Received Exit magic signal"
+                    self.update_console.emit(msg)
+                    print(msg)
                     logging.debug(msg)
                     if 'mp3' in locals():
                         mp3_stop.set()
                         time.sleep(0.2)
-                    if ("test_qsorder_exit_loop_DEADBEEF" in udp_data):
+                    if "test_qsorder_exit_loop_DEADBEEF" in udp_data:
                         # special case for automated tests
                         QApplication.quit()
                         logging.debug("Called QApplicationq.quit..")
                     break
 
-                if (self.options.debug):
+                if self.options.debug:
                     logging.debug('UDP Packet Received:')
                     logging.debug(udp_data)
 
                 # skip packet if duplicate
                 if check_sum in seen:
                     seen[check_sum] += 1
-                    if (self.options.debug):
+                    if self.options.debug:
                         logging.debug('DUPE packet skipped')
                 else:
                     seen[check_sum] = 1
@@ -884,71 +863,69 @@ class recording_loop(QThread):
                         timestamp = dateutil.parser.parse(qso_timestamp)
 
                         # verify that month matches, if not, give DD-MM-YY format precendense
-                        if (timestamp.strftime("%m") != now.strftime("%m")):
+                        if timestamp.strftime("%m") != now.strftime("%m"):
                             timestamp = dateutil.parser.parse(qso_timestamp, dayfirst=True)
 
                         # skip packet if not matching network station number specified in the command line
-                        if (self.options.station_nr > 0):
-                            if (self.options.station_nr != station):
+                        if self.options.station_nr > 0:
+                            if self.options.station_nr != station:
                                 msg = ("QSO: " + timestamp.strftime("%m-%d %H:%M:%S") + call + " "
                                        + freq + " --- ignoring from stn" + str(station))
-                                self.update_console.emit(msg);
-                                print(msg);
+                                self.update_console.emit(msg)
+                                print(msg)
                                 logging.debug(msg)
                                 continue
 
                         # skip packet if QSO was more than options.buffer_length-DELAY seconds ago
                         t_delta = (now - timestamp).total_seconds()
-                        if (t_delta > self.options.buffer_length - DELAY):
+                        if t_delta > self.options.buffer_length - DELAY:
                             msg = ("---: " + timestamp.strftime("%m-%d %H:%M:%S") + call + " "
                                    + freq + " --- ignoring " + str(t_delta) + " sec old QSO. Check clock settings?")
-                            self.update_console.emit(msg);
-                            print(msg);
+                            self.update_console.emit(msg)
+                            print(msg)
                             logging.debug(msg)
                             continue
-                        elif (t_delta < -DELAY):
+                        elif t_delta < -DELAY:
                             msg = ("---: " + timestamp.strftime("%m-%d %H:%M:%S") + call + " "
                                    + freq + " --- ignoring " + str(
                                         -t_delta) + "sec QSO in the 'future'. Check clock settings?")
-                            self.update_console.emit(msg);
-                            print(msg);
+                            self.update_console.emit(msg)
+                            print(msg)
                             logging.debug(msg)
                             continue
 
                         calls = call + "_de_" + mycall
 
                         # take into account UDP buffer delay
-                        if (t_delta > DELAY):
+                        if t_delta > DELAY:
                             t_delta = DELAY
 
                         t = threading.Timer(DELAY - t_delta, self._dump_audio,
                                             [calls, contest, mode, freq, timestamp, radio_nr, self.sampwidth])
                         msg = ("QSO: " + timestamp.strftime("%m-%d %H:%M:%S") + " " + call + " " + freq)
-                        self.update_console.emit(msg);
-                        print(msg);
+                        self.update_console.emit(msg)
+                        print(msg)
                         logging.debug(msg)
                         t.start()
                         self.qsos_in_queue += 1
                     except:
-                        if (self.options.debug):
+                        if self.options.debug:
                             logging.debug('Could not parse previous packet')
                             logging.debug(sys.exc_info())
 
                         pass  # ignore, probably some other udp packet
 
-            except (KeyboardInterrupt):
-                msg = ("73! K3IT")
-                self.update_console.emit(msg);
-                print(msg);
+            except KeyboardInterrupt:
+                msg = "73! K3IT"
+                self.update_console.emit(msg)
+                print(msg)
                 logging.debug(msg)
-                stream.stop_stream()
+                stream.stop()
                 stream.close()
-                self.p.terminate()
                 exit(0)
 
-        stream.stop_stream()
+        stream.stop()
         stream.close()
-        self.p.terminate()
 
 
 if __name__ == '__main__':
