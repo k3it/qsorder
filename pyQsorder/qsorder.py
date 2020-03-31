@@ -29,7 +29,6 @@ import ctypes
 import datetime
 import json
 import logging
-import os
 import platform
 import re
 import subprocess
@@ -48,9 +47,11 @@ import sounddevice as sd
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import QFileDialog
-# from .qgui import *
-# except:
-from qgui import *
+
+try:
+    from .qgui import *
+except:
+    from qgui import *
 
 # from PyQt5.QtUiTools import *
 # from PyQt5 import *
@@ -206,7 +207,7 @@ class qsorder(object):
         if not self.options.device_index:
             try:
                 def_index = sd.query_devices(device=sd.default.device, kind='input')
-                self.selected_input = def_index['name']
+                self.selected_input = def_index['name'] + " - " + sd.query_hostapis(def_index['hostapi'])['name']
             except IOError as e:
                 self._update_text(e.strerror)
 
@@ -235,7 +236,7 @@ class qsorder(object):
         sys.exit(app.exec_())
 
     def _selectPath(self):
-        self.qsorder.ui.path.setText(QFileDialog.getExistingDirectory(options=QFileDialog.DontUseNativeDialog))
+        self.qsorder.ui.path.setText(QFileDialog.getExistingDirectory())
 
     def _apply_settings(self):
         self.options.buffer_length = self.qsorder.ui.buffer.value()
@@ -746,16 +747,24 @@ class recording_loop(QThread):
             # add code for continous recording here
             replay_frames.append(in_data)
 
-        stream = sd.RawInputStream(dtype=FORMAT,
-                                   channels=CHANNELS,
-                                   device=DEVINDEX,
-                                   samplerate=RATE,
-                                   blocksize=CHUNK,
-                                   callback=callback)
+        try:
+            stream = sd.RawInputStream(dtype=FORMAT,
+                                       channels=CHANNELS,
+                                       device=DEVINDEX,
+                                       samplerate=RATE,
+                                       blocksize=CHUNK,
+                                       callback=callback)
+
+        except sd.PortAudioError:
+            msg = "Failed to attach to device idx " + str(DEVINDEX) + ", " + def_index['name']
+            self.update_console.emit(msg)
+            print(msg)
+            logging.debug(msg)
+            return
+            # exit(255)
 
         # start the stream
         stream.start()
-
         self.sampwidth = stream.samplesize
 
         msg = ("* recording %d ch, %d secs audio buffer, Delay: %d secs" % (CHANNELS, dqlength * CHUNK / RATE, DELAY))
@@ -810,7 +819,7 @@ class recording_loop(QThread):
             logging.debug(msg)
 
         seen = {}
-        while stream.active():
+        while stream.active:
             try:
                 udp_data = s.recv(2048)
                 check_sum = binascii.crc32(udp_data)
