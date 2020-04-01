@@ -5,7 +5,7 @@
 # qsorder - A contest QSO recorder
 # Title: qsorder.py
 # Author: k3it
-# Version: 3.0
+# Version: 20.30.31
 ##################################################
 
 # qsorder is free software: you can redistribute it and/or modify
@@ -21,7 +21,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-__version__ = '3.0'
+__version__ = '5.1'
 
 import argparse
 import binascii
@@ -568,7 +568,7 @@ class recording_loop(QThread):
         utchr = now.hour
         utcmin = now.minute
         (lame, filename) = self._start_new_lame_stream()
-        start = time.clock() * 1000
+        start = time.process_time() * 1000
         bytes_written = 0
         avg_rate = 0
 
@@ -586,7 +586,7 @@ class recording_loop(QThread):
                 lame.stdin.write(data)
                 bytes_written += sys.getsizeof(data)
             else:
-                end = time.clock() * 1000
+                end = time.process_time() * 1000
                 if end - start > 60000:
                     elapsed = end - start
                     sampling_rate = bytes_written / 4 / elapsed
