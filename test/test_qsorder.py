@@ -1,21 +1,14 @@
-import sys
+import datetime
 import logging
+import os
+import sys
+import threading
 import unittest
-from nose.tools import timed
+import xml.etree.cElementTree as ET
+from socket import *
 from time import sleep
-import time
-
-import cProfile, pstats
 
 from pyQsorder import qsorder
-
-import mock
-from socket import *
-import threading
-
-import xml.etree.cElementTree as ET
-import datetime, os
-
 
 MYPORT = 50000
 
@@ -149,13 +142,14 @@ class ModTest(unittest.TestCase):
 		with self.assertRaises(SystemExit):
 			data = ET.parse("test/udp-test-packet.xml").getroot()
 			now = datetime.datetime.utcnow()
-			now += datetime.timedelta(0,3)
+			now += datetime.timedelta(0, 3)
 
-			argslist = ['-d 2', '-p tmp']
+			# argslist = ['-d 2', '-p tmp']
+			argslist = ['-d 2']
 
 			data.find('timestamp').text = now.strftime("%Y-%m-%d %H:%M:%S")
 			udp_packet = ET.tostring(data)
-			output = checkUDPparsing(udp_packet,argslist=argslist,delay_before_exit=5).get_output()
+			output = checkUDPparsing(udp_packet, argslist=argslist, delay_before_exit=5).get_output()
 		verification_output = "WAV:"
 		self.assertIn(verification_output, sys.stdout.getvalue())
 		# check for mp3 conversion also
