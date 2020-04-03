@@ -11,6 +11,7 @@ before_install:
 - sudo bash test/prep-dummy-soundcard.sh
 - sudo apt-get install -y lame
 install:
+- pip3 install --upgrade pip
 - pip3 install -r requirements.txt
 - pip3 install coveralls
 env:
