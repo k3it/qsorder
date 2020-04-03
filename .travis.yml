@@ -11,8 +11,8 @@ before_install:
 - sudo bash test/prep-dummy-soundcard.sh
 - sudo apt-get install -y lame
 install:
-- pip install -r requirements.txt
-- pip install coveralls
+- pip3 install -r requirements.txt
+- pip3 install coveralls
 env:
   global: AUDIODEV=null
   matrix:
