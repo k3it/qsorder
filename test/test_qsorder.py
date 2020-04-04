@@ -59,7 +59,7 @@ class ModTest(unittest.TestCase):
 
     def testDropboxConnect(self):
         drop_key = os.environ['DROP_KEY']
-        logging.debug("drop key: " + drop_key[-3:])
+        logging.debug("drop key: " + drop_key[1:3] + "..." + drop_key[-3:])
 
         with self.assertRaises(SystemExit):
             argslist = ['-u' + drop_key, '-d 2']
