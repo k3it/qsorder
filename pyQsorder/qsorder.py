@@ -907,5 +907,6 @@ def print_and_log(msg):
     print(msg)
     logging.debug(msg)
 
+
 if __name__ == '__main__':
     qsorder = qsorder()

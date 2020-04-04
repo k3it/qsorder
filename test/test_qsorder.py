@@ -69,7 +69,7 @@ class ModTest(unittest.TestCase):
             data.find('timestamp').text = now.strftime("%Y-%m-%d %H:%M:%S")
             data.find('call').text = "TE5T"
             udp_packet = ET.tostring(data)
-            output = checkUDPparsing(udp_packet, argslist=argslist, delay_before_exit=7).get_output()
+            output = checkUDPparsing(udp_packet, argslist=argslist, delay_before_exit=30).get_output()
         verification_output = "WAV: Uploaded"
         self.assertIn(verification_output, sys.stdout.getvalue())
 
