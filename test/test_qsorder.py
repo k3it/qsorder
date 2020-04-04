@@ -22,8 +22,8 @@ class simpleUDPBcast(object):
         # Send UDP broadcast packets
 
         s = socket(AF_INET, SOCK_DGRAM)
-        s.bind(('', 0))
-        s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+        s.bind(('127.0.0.1', 0))
+        # s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
 
         # wait for qsorder to start
         sleep(3)
@@ -33,11 +33,11 @@ class simpleUDPBcast(object):
             udp_packet = udp_packet.encode()
         except:
             pass
-        s.sendto(udp_packet, ('<broadcast>', MYPORT))
+        s.sendto(udp_packet, ('127.0.0.1', MYPORT))
 
         sleep(delay_before_exit)
         udp_packet = "test_qsorder_exit_loop_DEADBEEF"
-        s.sendto(udp_packet.encode(), ('<broadcast>', MYPORT))
+        s.sendto(udp_packet.encode(), ('127.0.0.1', MYPORT))
 
 
 class checkUDPparsing(object):
@@ -62,7 +62,7 @@ class ModTest(unittest.TestCase):
         logging.debug("drop key: " + drop_key[-3:])
 
         with self.assertRaises(SystemExit):
-            argslist = ['-u' + drop_key, '-d 2']
+            argslist = ['-u ' + drop_key, '-d 2']
             now = datetime.datetime.utcnow()
             now += datetime.timedelta(0, 3)
             data = ET.parse("test/udp-test-packet.xml").getroot()
