@@ -62,14 +62,14 @@ class ModTest(unittest.TestCase):
         logging.debug("drop key: " + drop_key[-3:])
 
         with self.assertRaises(SystemExit):
-            argslist = ['-u ' + drop_key, '-d 2']
+            argslist = ['-u' + drop_key, '-d 2']
             now = datetime.datetime.utcnow()
             now += datetime.timedelta(0, 3)
             data = ET.parse("test/udp-test-packet.xml").getroot()
             data.find('timestamp').text = now.strftime("%Y-%m-%d %H:%M:%S")
             data.find('call').text = "TE5T"
             udp_packet = ET.tostring(data)
-            output = checkUDPparsing(udp_packet, argslist=argslist, delay_before_exit=10).get_output()
+            output = checkUDPparsing(udp_packet, argslist=argslist, delay_before_exit=7).get_output()
         verification_output = "WAV: Uploaded"
         self.assertIn(verification_output, sys.stdout.getvalue())
 
