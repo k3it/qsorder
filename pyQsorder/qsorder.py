@@ -100,7 +100,9 @@ class wave_file:
                 os.makedirs(self.contest_dir)
             self.w = wave.open(self.wavfile, 'wb')
         except:
-            print("unable to open WAV file for writing")
+
+            msg = "unable to open WAV file for writing"
+            print_and_log(msg)
             sys.exit()
         # 16 bit complex samples
         # self.w.setparams((2, 2, samp_rate, 1, 'NONE', 'not compressed'))
@@ -178,8 +180,8 @@ class qsorder(object):
         self.inputs = {}
         self.selected_input = None
         if self.options.query_inputs:
-            print("\nDevice index Description")
-            print("------------ -----------")
+            print_and_log("\nDevice index Description")
+            print_and_log("------------ -----------")
 
         devs = sd.query_devices()
 
@@ -189,7 +191,8 @@ class qsorder(object):
                     sd.check_input_settings(device=i, channels=CHANNELS, dtype=FORMAT)
                     dev_name = devs[i]['name'] + " - " + sd.query_hostapis(devs[i]['hostapi'])['name']
                     if self.options.query_inputs:
-                        print("\t", i, "\t", dev_name)
+                        msg = "\t" + i + "\t" + dev_name
+                        print_and_log()
                     else:
                         self.inputs[dev_name] = i
                         if i == self.options.device_index:
@@ -265,8 +268,7 @@ class qsorder(object):
         except KeyError as e:
             msg = ("Invalid Input device index: %s" % self.options.device_index)
             self._update_text(msg)
-            logging.debug(msg)
-            print(msg)
+            print_and_log()
             return
 
         try:
@@ -301,13 +303,11 @@ class qsorder(object):
                     self.client.files_upload(f.read(), file.replace(self.options.path, ''), mute=True)
                     msg = ("WAV: Uploaded %s\n" % file.replace(self.options.path, ''))
                     self._update_text(msg)
-                    logging.debug(msg)
-                    print(msg)
+                    print_and_log(msg)
             except Exception as err:
                 msg = ("ERR: Failed to upload %s\n%s" % (file.replace(self.options.path, ''), err))
                 self._update_text(msg)
-                logging.debug(msg)
-                print(msg)
+                print_and_log(msg)
 
     def _update_status(self):
         palette = QPalette()
@@ -369,7 +369,8 @@ class qsorder(object):
         s.sendto(udp_packet.encode(), ('<broadcast>', MYPORT))
         s.close()
         if hasattr(self, 'thread') and not self.thread.wait(2000):
-            print("Tired of waiting, killing thread")
+            msg = "Tired of waiting, killing thread"
+            print_and_log(msg)
             self.thread.terminate()
             self.thread.wait(500)
 
@@ -386,7 +387,7 @@ class test_thread(QThread):
         while self._isRunning:
             self.update_console.emit("thread running")
             time.sleep(1)
-        print("Quiting thread..")
+        print_and_log("Quiting thread..")
 
     def quit(self):
         self._isRunning = False
@@ -460,8 +461,7 @@ class recording_loop(QThread):
                   + ".." + str(freq) + "Mhz.mp3 " + gain.group(0)
             msg = msg.rstrip()
             self.update_console.emit(msg)
-            print(msg)
-            logging.debug(msg)
+            print_and_log(msg)
 
             os.remove(w.wavfile)
 
@@ -471,8 +471,7 @@ class recording_loop(QThread):
         except:
             msg = ("could not convert wav to mp3 " + str(sys.exc_info()))
             self.update_console.emit(msg)
-            print(msg)
-            logging.debug(msg)
+            print_and_log(msg)
 
         if call != "HOTKEY":
             self.qsos_in_queue -= 1
@@ -481,8 +480,7 @@ class recording_loop(QThread):
         msg = ("QSO: " + datetime.datetime.utcnow().strftime("%m-%d %H:%M:%S")
                + " Ctrl+Alt+" + HOTKEY + " HOTKEY pressed")
         self.update_console.emit(msg)
-        print(msg)
-        logging.debug(msg)
+        print_and_log(msg)
         self._dump_audio("HOTKEY", "AUDIO", "RF", 0, datetime.datetime.utcnow(), 73, self.sampwidth)
 
     def _get_free_space_mb(self, folder):
@@ -540,25 +538,21 @@ class recording_loop(QThread):
         except:
             msg = "CTL: error starting continous mp3 recording."
             self.update_console.emit(msg)
-            print(msg)
-            logging.debug(msg)
+            print_and_log(msg)
             exit(-1)
 
         msg = ("CTL: " + str(now.hour).zfill(2) + ":" + str(now.minute).zfill(
             2) + "Z started new .mp3 file: " + filename)
         self.update_console.emit(msg)
-        print(msg)
-        logging.debug(msg)
+        print_and_log(msg)
         freegb = self._get_free_space_mb(contest_dir) / 1024.0
         msg = ("CTL: Disk free space: %.2f GB" % freegb)
         self.update_console.emit(msg)
-        print(msg)
-        logging.debug(msg)
+        print_and_log(msg)
         if self._get_free_space_mb(contest_dir) < 100:
             msg = "CTL: WARNING: Low Disk space"
             self.update_console.emit(msg)
-            print(msg)
-            logging.debug(msg)
+            print_and_log(msg)
         return mp3handle, filename
         # write continious mp3 stream to disk in a separate worker thread
 
@@ -599,14 +593,12 @@ class recording_loop(QThread):
                 msg = ("CTL: " + str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2)
                        + "Z ...recording: " + filename)
                 self.update_console.emit(msg)
-                print(msg)
-                logging.debug(msg)
+                print_and_log(msg)
                 contest_dir = "AUDIO_" + str(now.year)
                 if self._get_free_space_mb(contest_dir) < 100:
                     msg = "CTL: WARNING: Low Disk space"
                     self.update_console.emit(msg)
-                    print(msg)
-                    logging.debug(msg)
+                    print_and_log(msg)
                 utcmin = now.minute
 
         # stop signal received
@@ -640,20 +632,16 @@ class recording_loop(QThread):
 
         msg = "--------------------------------------"
         self.update_console.emit(msg)
-        print(msg)
-        logging.debug(msg)
+        print_and_log(msg)
         msg = ("QSO Recorder for N1MM v" + __version__ + ", 2017 K3IT")
         self.update_console.emit(msg)
-        print(msg)
-        logging.debug(msg)
+        print_and_log(msg)
         msg = "--------------------------------------"
         self.update_console.emit(msg)
-        print(msg)
-        logging.debug(msg)
+        print_and_log(msg)
         msg = (datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"))
         self.update_console.emit(msg)
-        print(msg)
-        logging.debug(msg)
+        print_and_log(msg)
 
         if platform.system() == 'Windows':
             self.lame_path = self._which('lame.exe')
@@ -663,13 +651,11 @@ class recording_loop(QThread):
         if not self.lame_path:
             msg = "CTL: Cannot find lame encoder executable"
             self.update_console.emit(msg)
-            print(msg)
-            logging.debug(msg)
+            print_and_log(msg)
         else:
             msg = ("mp3 encoder: " + self.lame_path)
             self.update_console.emit(msg)
-            print(msg)
-            logging.debug(msg)
+            print_and_log(msg)
 
         if self.options.path:
             try:
@@ -677,8 +663,7 @@ class recording_loop(QThread):
             except:
                 msg = ("Invalid directory specified: " + self.options.path)
                 self.update_console.emit(msg)
-                print(msg)
-                logging.debug(msg)
+                print_and_log(msg)
                 return
 
         if len(self.options.hot_key) == 1:
@@ -687,8 +672,7 @@ class recording_loop(QThread):
         else:
             msg = "Hotkey should be a single character"
             self.update_console.emit(msg)
-            print(msg)
-            logging.debug(msg)
+            print_and_log(msg)
             return
 
         if self.options.debug:
@@ -702,15 +686,13 @@ class recording_loop(QThread):
                 def_index = sd.query_devices(device=self.options.device_index, kind='input')
                 msg = ("Input Device: " + def_index['name'])
                 self.update_console.emit(msg)
-                print(msg)
-                logging.debug(msg)
+                print_and_log(msg)
                 self.input = def_index['name']
                 DEVINDEX = self.options.device_index
             except IOError as e:
                 msg = ("Invalid Input device: %s" % e[0])
                 self.update_console.emit(msg)
-                print(msg)
-                logging.debug(msg)
+                print_and_log(msg)
                 os._exit(-1)
 
         else:
@@ -724,8 +706,7 @@ class recording_loop(QThread):
             except IOError as e:
                 msg = ("No Input devices: %s" % e[0])
                 self.update_console.emit(msg)
-                print(msg)
-                logging.debug(msg)
+                print_and_log(msg)
                 os._exit(-1)
 
                 # queue for chunked recording
@@ -738,8 +719,7 @@ class recording_loop(QThread):
 
         msg = ("Listening on UDP port " + str(MYPORT))
         self.update_console.emit(msg)
-        print(msg)
-        logging.debug(msg)
+        print_and_log(msg)
 
         # define callback
         def callback(in_data, frame_count, time_info, status):
@@ -758,8 +738,7 @@ class recording_loop(QThread):
         except sd.PortAudioError:
             msg = "Failed to attach to device idx " + str(DEVINDEX) + ", " + def_index['name']
             self.update_console.emit(msg)
-            print(msg)
-            logging.debug(msg)
+            print_and_log(msg)
             return
             # exit(255)
 
@@ -769,32 +748,26 @@ class recording_loop(QThread):
 
         msg = ("* recording %d ch, %d secs audio buffer, Delay: %d secs" % (CHANNELS, dqlength * CHUNK / RATE, DELAY))
         self.update_console.emit(msg)
-        print(msg)
-        logging.debug(msg)
+        print_and_log(msg)
 
         msg = ("Output directory: " + self.options.path.replace('\\', '/') + "/<contest...>")
         self.update_console.emit(msg)
-        print(msg)
-        logging.debug(msg)
+        print_and_log(msg)
         msg = ("Hotkey: CTRL+ALT+" + HOTKEY)
         self.update_console.emit(msg)
-        print(msg)
-        logging.debug(msg)
+        print_and_log(msg)
 
         if self.options.station_nr > 0:
             msg = ("Recording only station " + str(self.options.station_nr) + "QSOs")
             self.update_console.emit(msg)
-            print(msg)
-            logging.debug(msg)
+            print_and_log(msg)
         if self.options.continuous:
             msg = "Full contest recording enabled."
             self.update_console.emit(msg)
-            print(msg)
-            logging.debug(msg)
+            print_and_log(msg)
         msg = "--------------------------------------\n"
         self.update_console.emit(msg)
-        print(msg)
-        logging.debug(msg)
+        print_and_log(msg)
 
         # start continious mp3 writer thread
         if self.options.continuous:
@@ -815,8 +788,7 @@ class recording_loop(QThread):
         except:
             msg = "Error connecting to the UDP stream."
             self.update_console.emit(msg)
-            print(msg)
-            logging.debug(msg)
+            print_and_log(msg)
 
         seen = {}
         while stream.active:
@@ -832,8 +804,7 @@ class recording_loop(QThread):
                 if "qsorder_exit_loop_DEADBEEF" in udp_data or self._isRunning is False:
                     msg = "Received Exit magic signal"
                     self.update_console.emit(msg)
-                    print(msg)
-                    logging.debug(msg)
+                    print_and_log(msg)
                     if 'mp3' in locals():
                         mp3_stop.set()
                         time.sleep(0.2)
@@ -881,8 +852,7 @@ class recording_loop(QThread):
                                 msg = ("QSO: " + timestamp.strftime("%m-%d %H:%M:%S") + call + " "
                                        + freq + " --- ignoring from stn" + str(station))
                                 self.update_console.emit(msg)
-                                print(msg)
-                                logging.debug(msg)
+                                print_and_log(msg)
                                 continue
 
                         # skip packet if QSO was more than options.buffer_length-DELAY seconds ago
@@ -891,16 +861,14 @@ class recording_loop(QThread):
                             msg = ("---: " + timestamp.strftime("%m-%d %H:%M:%S") + call + " "
                                    + freq + " --- ignoring " + str(t_delta) + " sec old QSO. Check clock settings?")
                             self.update_console.emit(msg)
-                            print(msg)
-                            logging.debug(msg)
+                            print_and_log(msg)
                             continue
                         elif t_delta < -DELAY:
                             msg = ("---: " + timestamp.strftime("%m-%d %H:%M:%S") + call + " "
                                    + freq + " --- ignoring " + str(
                                         -t_delta) + "sec QSO in the 'future'. Check clock settings?")
                             self.update_console.emit(msg)
-                            print(msg)
-                            logging.debug(msg)
+                            print_and_log(msg)
                             continue
 
                         calls = call + "_de_" + mycall
@@ -913,8 +881,7 @@ class recording_loop(QThread):
                                             [calls, contest, mode, freq, timestamp, radio_nr, self.sampwidth])
                         msg = ("QSO: " + timestamp.strftime("%m-%d %H:%M:%S") + " " + call + " " + freq)
                         self.update_console.emit(msg)
-                        print(msg)
-                        logging.debug(msg)
+                        print_and_log(msg)
                         t.start()
                         self.qsos_in_queue += 1
                     except:
@@ -927,8 +894,7 @@ class recording_loop(QThread):
             except KeyboardInterrupt:
                 msg = "73! K3IT"
                 self.update_console.emit(msg)
-                print(msg)
-                logging.debug(msg)
+                print_and_log(msg)
                 stream.stop()
                 stream.close()
                 exit(0)
@@ -936,6 +902,10 @@ class recording_loop(QThread):
         stream.stop()
         stream.close()
 
+
+def print_and_log(msg):
+    print(msg)
+    logging.debug(msg)
 
 if __name__ == '__main__':
     qsorder = qsorder()
