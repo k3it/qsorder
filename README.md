@@ -22,7 +22,7 @@ Download and unpack both the qsorder executable and lame.exe to the directory wh
 
 Find the [ExternalBroadcast] section in your N1MM Logger.ini and include the lines below. This enables local QSO info UDP broadcast. For more info see N1MM UDP documentation. Restart N1MM after making changes.
 
-(alternative instructions here: http://n1mm.hamdocs.com/tiki-index.php?page=Third+Party+Software#QSOrder_by_Vasily_K3IT_ )
+(alternative instructions here: https://n1mmwp.hamdocs.com/appendices/third-party-software/#qsorder-by-vasily-k3it )
 
 
 _N1MM+: files should be extracted to ..Documents\N1MM Logger+\QsoRecording in order to play correctly from the N1MM+ log window._
