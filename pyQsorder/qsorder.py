@@ -21,7 +21,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-__version__ = '5.1'
+__version__ = '3.1'
 
 import argparse
 import binascii
@@ -29,6 +29,7 @@ import ctypes
 import datetime
 import json
 import logging
+import os
 import platform
 import re
 import subprocess
@@ -36,6 +37,7 @@ import sys
 import threading
 import time
 import wave
+import webbrowser
 import xml.parsers.expat
 from collections import deque
 from socket import *
@@ -45,13 +47,27 @@ import dropbox
 import sounddevice as sd
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
+from PyQt5.QtWidgets import QApplication, QWidget
 from PyQt5.QtWidgets import QFileDialog
 from xml.dom.minidom import parseString
 
 try:
-    from .qgui import *
+    from winreg import *
 except:
-    from qgui import *
+    # non-windows platform
+    pass
+
+# try:
+#     from . import qsorder_ui
+# except:
+
+# sys.path.insert(1, './pyQsorder/')
+import qsorder_ui
+
+# try:
+#     from .qgui import *
+# except:
+#     from qgui import *
 
 # from PyQt5.QtUiTools import *
 # from PyQt5 import *
@@ -62,6 +78,50 @@ CHANNELS = 2
 BASENAME = "QSO"
 LO = 14000
 DEBUG_FILE = "qsorder-debug-log.txt"
+
+
+class qsorderApp(QWidget):
+    def __init__(self, options):
+        super(qsorderApp, self).__init__()
+        self.options = options
+        self.initUI()
+
+    def _register(self):
+        webbrowser.open('https://qsorder.hamradiomap.com/register')
+
+    def initUI(self):
+
+        self.ui = qsorder_ui.Ui_Form()
+
+        self.ui.setupUi(self)
+
+        self.ui.quitButton.clicked.connect(QCoreApplication.instance().quit)
+        self.ui.getDropbox_btn.clicked.connect(self._register)
+
+        # process arguments
+        self.ui.buffer.setValue(self.options.buffer_length)
+        self.ui.delay.setValue(self.options.delay)
+        self.ui.port.setValue(self.options.port)
+        self.ui.drop_key.setText(self.options.drop_key)
+
+        if self.options.path:
+            self.ui.path.setText(self.options.path)
+        else:
+            try:
+                aReg = ConnectRegistry(None, HKEY_CURRENT_USER)
+                key = OpenKey(aReg, r"Software\N1MM Logger+")
+                path = QueryValueEx(key, 'userdir')[0] + "\\QsoRecording"
+                self.ui.path.setText(path)
+            except:
+                self.ui.path.setText(os.getcwd())
+
+        self.ui.hotkey.setText(self.options.hot_key.upper())
+        self.ui.debug.setChecked(self.options.debug)
+        self.ui.continuous.setChecked(self.options.continuous)
+        self.ui.so2r.setChecked(self.options.so2r)
+        self.ui.station_nr.setValue(self.options.station_nr)
+
+        self.show()
 
 
 class wave_file:
@@ -166,7 +226,10 @@ class qsorder(object):
         MYPORT = self.options.port
 
         # load parameters from json file, if no flags specified on the command line and config file exists
-        config_file = os.path.dirname(os.path.realpath(__file__)) + "/qsorder-config.txt"
+        if getattr(sys, 'frozen', False):
+            config_file = os.path.dirname(os.path.realpath(sys.executable)) + "/qsorder-config.txt"
+        else:
+            config_file = os.path.dirname(os.path.realpath(__file__)) + "/qsorder-config.txt"
         if len(sys.argv[1:]) == 0 and os.path.isfile(config_file):
             try:
                 with open(config_file) as params_file:
@@ -416,16 +479,7 @@ class recording_loop(QThread):
         BASENAME = BASENAME.replace('/', '-')
         w = wave_file(RATE, freq, BASENAME, qso_time, contest, mode, sampwidth, self.options.path)
         __data = (b''.join(frames))
-        bytes_written = w.write(__data)
         w.close_wave()
-
-        # try to convert to mp3
-        # lame_path = os.path.dirname(os.path.realpath(__file__))
-        # lame_path += "\\lame.exe"
-
-        # if not os.path.isfile(lame_path):
-        #     #try to use one in the system path
-        #     lame_path = 'lame.exe'
 
         lame_path = self.lame_path
 
@@ -499,12 +553,6 @@ class recording_loop(QThread):
             return st.f_bavail * st.f_frsize / 1024 / 1024
 
     def _start_new_lame_stream(self):
-        # lame_path = os.path.dirname(os.path.realpath(__file__))
-        # lame_path += "\\lame.exe"
-
-        # if not os.path.isfile(lame_path):
-        #     #try to use one in the system path
-        #     lame_path = 'lame'
 
         lame_path = self.lame_path
 
@@ -618,7 +666,10 @@ class recording_loop(QThread):
             if is_exe(program):
                 return program
         else:
-            pathlist = [os.path.dirname(os.path.realpath(__file__)), os.getcwd()]
+            if getattr(sys, 'frozen', False):
+                pathlist = [os.path.dirname(os.path.realpath(sys.executable)), os.getcwd()]
+            else:
+                pathlist = [os.path.dirname(os.path.realpath(__file__)), os.getcwd()]
             pathlist.extend(os.environ["PATH"].split(os.pathsep))
             for path in pathlist:
                 path = path.strip('"')
