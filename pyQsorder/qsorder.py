@@ -915,8 +915,9 @@ class recording_loop(QThread):
                         # skip packet if not matching radio number specified in the command line
                         if self.options.radio_nr and self.options.radio_nr >= 0:
                             if self.options.radio_nr != int(radio_nr):
-                                print("QSO:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq,
-                                      "--- ignoring from radio/VFO", radio_nr)
+                                msg = ("QSO:", timestamp.strftime("%m-%d %H:%M:%S"), call, freq,
+                                       "--- ignoring from radio/VFO", radio_nr)
+                                self.update_console.emit(msg)
                                 continue
 
                         # skip packet if QSO was more than options.buffer_length-DELAY seconds ago
