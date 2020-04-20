@@ -39,7 +39,6 @@ import wave
 import xml.parsers.expat
 from collections import deque
 from socket import *
-from xml.dom.minidom import parseString
 
 import dateutil.parser
 import dropbox
@@ -47,6 +46,7 @@ import sounddevice as sd
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import QFileDialog
+from xml.dom.minidom import parseString
 
 try:
     from .qgui import *
@@ -429,17 +429,21 @@ class recording_loop(QThread):
 
         lame_path = self.lame_path
 
+        artist = "QSO Audio"
+        title = os.path.basename(w.wavfile).replace('.wav', '')
+        year = str(qso_time.year)
+
         if self.options.so2r and radio_nr == "1":
             command = [lame_path]
-            arguments = ["-h", "-m", "m", "--scale-l", "2", "--scale-r", "0", w.wavfile]
+            arguments = ["--tt", title, "--ta", artist, "--ty", year, "-h", "-m", "l", w.wavfile]
             command.extend(arguments)
         elif self.options.so2r and radio_nr == "2":
             command = [lame_path]
-            arguments = ["-h", "-m", "m", "--scale-l", "0", "--scale-r", "2", w.wavfile]
+            arguments = ["--tt", title, "--ta", artist, "--ty", year, "-h", "-m", "r", w.wavfile]
             command.extend(arguments)
         else:
             command = [lame_path]
-            arguments = ["-h", w.wavfile]
+            arguments = ["--tt", title, "--ta", artist, "--ty", year, "-h", w.wavfile]
             command.extend(arguments)
 
         try:
