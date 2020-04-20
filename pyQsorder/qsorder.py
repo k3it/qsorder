@@ -62,9 +62,7 @@ except:
 # except:
 
 sys.path.insert(1, './pyQsorder/')
-imp
-ort
-qsorder_ui
+import qsorder_ui
 
 # try:
 #     from .qgui import *
