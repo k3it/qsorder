@@ -61,7 +61,7 @@ except:
 #     from . import qsorder_ui
 # except:
 
-# sys.path.insert(1, './pyQsorder/')
+sys.path.insert(1, './pyQsorder/')
 import qsorder_ui
 
 # try:
