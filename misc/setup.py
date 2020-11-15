@@ -9,10 +9,10 @@ import sys
 base = 'Win32GUI' if sys.platform == 'win32' else None
 
 executables = [
-    Executable('qsorder.py',
+    Executable('main.py',
                base=base,
-               targetName='pyQsorder',
-               icon='qsorder.ico',
+               targetName='misc',
+               icon='Icon.ico',
                shortcutName='Qsorder',
                shortcutDir="DesktopFolder",
                copyright='2020 K3IT',

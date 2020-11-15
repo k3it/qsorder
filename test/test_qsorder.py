@@ -6,7 +6,7 @@ import xml.etree.cElementTree as ET
 from socket import *
 from time import sleep
 
-from pyQsorder import qsorder
+from src.main.python import main
 
 MYPORT = 50000
 
@@ -47,7 +47,7 @@ class checkUDPparsing(object):
             argslist.append('-P ' + str(MYPORT))
         else:
             argslist = ['-P ' + str(MYPORT)]
-        qsorder.qsorder(argslist)
+        main.qsorder(argslist)
 
     def get_output(self):
         return sys.stdout.getvalue()
@@ -74,14 +74,14 @@ class ModTest(unittest.TestCase):
     def testCheckExit(self):
         argslist = ['-h']
         with self.assertRaises(SystemExit):
-            qsorder.qsorder(argslist=argslist)
+            main.qsorder(argslist=argslist)
         verification_output = "show this help message and exit"
         self.assertIn(verification_output, sys.stdout.getvalue())
 
     def testIndex(self):
         with self.assertRaises(SystemExit):
             argslist = ['-q']
-            qsorder.qsorder(argslist)
+            main.qsorder(argslist)
         verification_output = "Device index Description"
         self.assertIn(verification_output, sys.stdout.getvalue())
 

@@ -363,6 +363,6 @@ class Ui_Form(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.config_tab), _translate("Form", "Configuration"))
 
 try:
-    from . import bkg_img_rc
+    from misc import bkg_img_rc
 except:
     import bkg_img_rc

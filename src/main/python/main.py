@@ -3,7 +3,7 @@
 
 ##################################################
 # qsorder - A contest QSO recorder
-# Title: qsorder.py
+# Title: main.py
 # Author: k3it
 # Version: 20.30.31
 ##################################################
@@ -23,6 +23,9 @@
 
 __version__ = '3.1'
 
+from fbs_runtime.application_context.PyQt5 import ApplicationContext
+from PyQt5.QtWidgets import QMainWindow
+
 import argparse
 import binascii
 import ctypes
@@ -41,6 +44,7 @@ import webbrowser
 import xml.parsers.expat
 from collections import deque
 from socket import *
+from xml.dom.minidom import parseString
 
 import dateutil.parser
 import dropbox
@@ -49,7 +53,6 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import QApplication, QWidget
 from PyQt5.QtWidgets import QFileDialog
-from xml.dom.minidom import parseString
 
 try:
     from winreg import *
@@ -61,7 +64,7 @@ except:
 #     from . import qsorder_ui
 # except:
 
-sys.path.insert(1, './pyQsorder/')
+sys.path.insert(1, './misc/')
 import qsorder_ui
 
 # try:
@@ -972,4 +975,10 @@ def print_and_log(msg):
 
 
 if __name__ == '__main__':
+    # appctxt = ApplicationContext()  # 1. Instantiate ApplicationContext
+    # window = QMainWindow()
+    # window.resize(250, 150)
+    # window.show()
     qsorder = qsorder()
+    exit_code = qsorder.app.exec_()  # 2. Invoke appctxt.app.exec_()
+    sys.exit(exit_code)
