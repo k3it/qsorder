@@ -41,6 +41,7 @@ import webbrowser
 import xml.parsers.expat
 from collections import deque
 from socket import *
+from xml.dom.minidom import parseString
 
 import dateutil.parser
 import dropbox
@@ -49,7 +50,6 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import QApplication, QWidget
 from PyQt5.QtWidgets import QFileDialog
-from xml.dom.minidom import parseString
 
 try:
     from winreg import *
@@ -178,7 +178,7 @@ class wave_file:
         self.w.close()
 
 
-class qsorder(object):
+class qsorder_class(object):
     def __init__(self, argslist=None):
         self._parse_args(argslist)
 
@@ -254,8 +254,8 @@ class qsorder(object):
                     sd.check_input_settings(device=i, channels=CHANNELS, dtype=FORMAT)
                     dev_name = devs[i]['name'] + " - " + sd.query_hostapis(devs[i]['hostapi'])['name']
                     if self.options.query_inputs:
-                        msg = "\t" + i + "\t" + dev_name
-                        print_and_log()
+                        msg = "\t" + str(i) + "\t" + dev_name
+                        print_and_log(msg)
                     else:
                         self.inputs[dev_name] = i
                         if i == self.options.device_index:
@@ -331,7 +331,7 @@ class qsorder(object):
         except KeyError as e:
             msg = ("Invalid Input device index: %s" % self.options.device_index)
             self._update_text(msg)
-            print_and_log()
+            print_and_log(msg)
             return
 
         try:
@@ -688,7 +688,7 @@ class recording_loop(QThread):
         msg = "--------------------------------------"
         self.update_console.emit(msg)
         print_and_log(msg)
-        msg = ("QSO Recorder for N1MM v" + __version__ + ", 2017 K3IT")
+        msg = ("QSO Recorder for N1MM v" + __version__ + ", 2022 K3IT")
         self.update_console.emit(msg)
         print_and_log(msg)
         msg = "--------------------------------------"
@@ -972,4 +972,4 @@ def print_and_log(msg):
 
 
 if __name__ == '__main__':
-    qsorder = qsorder()
+    qsorder = qsorder_class()

@@ -8,6 +8,9 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+import bkg_img_rc
+
+
 class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
@@ -26,7 +29,7 @@ class Ui_Form(object):
         self.tabWidget = QtWidgets.QTabWidget(Form)
         self.tabWidget.setGeometry(QtCore.QRect(0, 0, 675, 350))
         self.tabWidget.setStyleSheet("background-color: rgb(243, 239, 222);\n"
-"background-image: url(:/bkground/ricepaper_v3.png);")
+                                     "background-image: url(:/bkground/ricepaper_v3.png);")
         self.tabWidget.setObjectName("tabWidget")
         self.console_tab = QtWidgets.QWidget()
         self.console_tab.setObjectName("console_tab")
@@ -362,7 +365,10 @@ class Ui_Form(object):
         self.selectDir_btn.setText(_translate("Form", "..."))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.config_tab), _translate("Form", "Configuration"))
 
-try:
-    from . import bkg_img_rc
-except:
-    import bkg_img_rc
+
+# try:
+#     from . import bkg_img_rc
+# except:
+#     import bkg_img_rc
+
+bkg_img_rc.qInitResources()
