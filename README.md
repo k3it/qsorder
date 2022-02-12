@@ -1,6 +1,10 @@
-[![Coverage Status](https://coveralls.io/repos/github/k3it/qsorder/badge.svg?branch=master)](https://coveralls.io/github/k3it/qsorder?branch=master)
-[![Build Status](https://travis-ci.org/k3it/qsorder.svg?branch=master)](https://travis-ci.org/k3it/qsorder)
-[![Documentation Status](https://readthedocs.org/projects/qsorder/badge/?version=latest)](http://qsorder.readthedocs.org/en/latest/?badge=latest)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=k3it_qsorder&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=k3it_qsorder)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=k3it_qsorder&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=k3it_qsorder)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=k3it_qsorder&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=k3it_qsorder)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=k3it_qsorder&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=k3it_qsorder)
+
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=k3it_qsorder&metric=bugs)](https://sonarcloud.io/summary/new_code?id=k3it_qsorder)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=k3it_qsorder&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=k3it_qsorder)
                 
 
 qsorder - audio recordig app for N1MM and TR4W contest QSOs.
