@@ -6,7 +6,7 @@
 qsorder - a console app for audio recordig of N1MM contest QSOs.
 ================================================================
 
-v3.0 - work in progress
+v3.2 - work in progress
 
 Download stable windows executable under [Releases](https://github.com/k3it/qsorder/releases)
 
