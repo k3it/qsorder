@@ -1,0 +1,67 @@
+on:
+  release:
+    types: [created]
+name: Handle Release
+
+env:
+   G_RELEASE: "x.xx"
+
+jobs:
+  generate:
+    name: Create release-artifacts
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@master
+        with:
+          ref: w9cf_debug
+      - name: Generate the artifacts
+        run : |
+           set -x
+           pwd
+           ls -l
+           Xvfb :0 -screen 0 1024x768x16 &
+           export DISPLAY=:0.0
+           export WINEARCH=win32
+           sudo dpkg --add-architecture i386
+           sudo apt-get update -y
+           sudo apt-get install wine32 -y
+           sudo apt-get install wine -y
+           sudo apt-get install winetricks -y
+           sudo winetricks --self-update -y
+           wine --version
+           wine winecfg -v win7
+           winetricks -q vcrun2017
+           wget -q https://www.python.org/ftp/python/3.8.10/python-3.8.10.exe
+           wine python-3.8.10.exe /quiet /nogui \
+              InstallAllUsers=1 \
+              TargetDir="C:Python38" \
+              PrependPath=1
+           wine C:Python38/python.exe -m pip install --upgrade pip
+           wine C:Python38/python.exe -m pip install \
+              -r requirements.txt
+           wine C:Python38/python.exe -m pip install pyinstaller
+           cd pyQsorder
+           wine C:/Python38/Scripts/pyrcc5.exe -o bkg_img_rc.py bkg_img.qrc
+           wine C:/Python38/Scripts/pyuic5.exe -o qsorder_ui.py qsorder.ui
+           wine C:/Python38/Scripts/pyinstaller.exe  -w -F --clean \
+              -p "." -n qsorder qsorder.py
+           cd ..
+           RELEASE="0.01"
+           echo "G_RELEASE=${RELEASE}" >> $GITHUB_ENV
+           rm -rf tmp
+           mkdir -p tmp
+           cp pyQsorder/dist/qsorder.exe tmp/qsorder.exe
+           cd tmp
+           zip qsorder_windows_exe.zip qsorder.exe
+           cd ..
+           echo Done
+      - name: Upload the artifacts
+        env:
+           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: actions/upload-release-asset@v1
+        with:
+           upload_url: ${{ github.event.release.upload_url }}
+           asset_path: tmp/qsorder.exe
+           asset_name: qsorder.exe
+           asset_content_type: application/octet-stream
