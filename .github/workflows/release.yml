@@ -12,7 +12,9 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout the repository
-        uses: actions/checkout@w9cf_debug
+        uses: actions/checkout@master
+        with:
+          ref: w9cf_debug
       - name: Generate the artifacts
         run : |
            set -x
@@ -37,7 +39,7 @@ jobs:
               PrependPath=1
            wine C:Python38/python.exe -m pip install --upgrade pip
            wine C:Python38/python.exe -m pip install \
-              -r requirements_qt5.txt
+              -r requirements.txt
            wine C:Python38/python.exe -m pip install pyinstaller
            cd pyQsorder
            wine C:/Python38/Scripts/pyrcc5.exe -o bkg_img_rc.py bkg_img.qrc
