@@ -45,7 +45,7 @@ jobs:
            wine C:/Python38/Scripts/pyrcc5.exe -o bkg_img_rc.py bkg_img.qrc
            wine C:/Python38/Scripts/pyuic5.exe -o qsorder_ui.py qsorder.ui
            wine C:/Python38/Scripts/pyinstaller.exe  -w -F --clean \
-              -n qsorder qsorder.py
+              -p "." -n qsorder qsorder.py
            cd ..
            RELEASE="0.01"
            echo "G_RELEASE=${RELEASE}" >> $GITHUB_ENV
