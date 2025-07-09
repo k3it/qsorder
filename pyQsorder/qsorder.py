@@ -480,7 +480,8 @@ class recording_loop(QThread):
         BASENAME = call + "_" + contest + "_" + mode
         BASENAME = BASENAME.replace('/', '-')
         w = wave_file(RATE, freq, BASENAME, qso_time, contest, mode, sampwidth, self.options.path)
-        __data = (b''.join(frames))
+#        __data = (b''.join(frames))
+        w.write(b''.join(frames))
         w.close_wave()
 
         lame_path = self.lame_path
@@ -648,7 +649,8 @@ class recording_loop(QThread):
                        + "Z ...recording: " + filename)
                 self.update_console.emit(msg)
                 print_and_log(msg)
-                contest_dir = "AUDIO_" + str(now.year)
+#                contest_dir = "AUDIO_" + str(now.year)
+                contest_dir = self.options.path + "/" + "AUDIO_" + str(now.year)
                 if self._get_free_space_mb(contest_dir) < 100:
                     msg = "CTL: WARNING: Low Disk space"
                     self.update_console.emit(msg)
@@ -780,6 +782,7 @@ class recording_loop(QThread):
 
         # define callback
         def callback(in_data, frame_count, time_info, status):
+            in_data = in_data[:] #Copy to byte string
             frames.append(in_data)
             # add code for continous recording here
             replay_frames.append(in_data)
